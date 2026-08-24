@@ -1,0 +1,37 @@
+-- BookLog Database Script (MySQL)
+-- Etapa 1: Cadastro, Login e Estante
+
+-- Criar banco de dados
+CREATE DATABASE IF NOT EXISTS booklogImpacta;
+
+USE booklogImpacta;
+
+-- Tabela de Usuarios
+CREATE TABLE IF NOT EXISTS Usuarios (
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    Nome VARCHAR(100) NOT NULL,
+    Email VARCHAR(255) NOT NULL,
+    SenhaHash LONGTEXT NOT NULL,
+    DataCriacao DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+
+    UNIQUE INDEX IX_Usuarios_Email (Email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- Tabela de Livros
+CREATE TABLE IF NOT EXISTS Livros (
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    Titulo VARCHAR(300) NOT NULL,
+    Autor VARCHAR(200) NULL,
+    Genero VARCHAR(100) NULL,
+    TotalPaginas INT NOT NULL,
+    DataCadastro DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    UsuarioId INT NOT NULL,
+
+    INDEX IX_Livros_UsuarioId (UsuarioId),
+
+    CONSTRAINT FK_Livros_Usuarios
+        FOREIGN KEY (UsuarioId)
+        REFERENCES Usuarios(Id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
