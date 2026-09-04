@@ -8,6 +8,17 @@ using BookLog.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 1. Configuração do CORS (Permite que o Flutter Web acesse a API)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 // Controllers
 builder.Services.AddControllers();
 
@@ -54,6 +65,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+// 2. Ativação do CORS (Deve ficar antes de Authentication e Authorization)
+app.UseCors("AllowAll");
 
 // Swagger
 if (app.Environment.IsDevelopment())
