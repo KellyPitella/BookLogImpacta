@@ -14,7 +14,7 @@ O projeto foi desenvolvido como uma aplicação **Full Stack**, composta por uma
 | **Aplicação**                  | BookLogImpacta                                                                                           |
 | **Tipo**                       | Aplicação Full Stack                                                                                     |
 | **Escopo desta entrega**       | Entrega 1                                                                                                |
-| **Funcionalidades da entrega** | Cadastro e login de usuários, estante de livros, adição de livros e visualização do progresso de leitura |
+| **Funcionalidades da entrega** | Cadastro e login de usuários, estante de livros, adição de livros                                        |
 
 ---
 
@@ -44,7 +44,7 @@ O projeto foi desenvolvido como uma aplicação **Full Stack**, composta por uma
 
 * **MySQL**
 * Schema: `booklogImpacta`
-* **Entity Framework Core Migrations** para gerenciamento da estrutura do banco
+
 
 ---
 
@@ -61,38 +61,42 @@ O relacionamento utiliza **Cascade Delete**, garantindo que, ao excluir um usuá
 
 ### Tabela `Usuarios`
 
-| Campo         | Tipo         | Descrição                              |
-| ------------- | ------------ | -------------------------------------- |
-| `Id`          | INT (PK)     | Identificador único do usuário         |
-| `Nome`        | VARCHAR(100) | Nome do usuário                        |
-| `Email`       | VARCHAR(255) | E-mail utilizado para autenticação     |
-| `SenhaHash`   | LONGTEXT     | Hash da senha gerado utilizando BCrypt |
-| `DataCriacao` | DATETIME     | Data e hora de criação da conta        |
+| Campo | Tipo | Descrição |
+| :--- | :--- | :--- |
+| `Id` | INT (PK) | Identificador único do usuário (Auto Increment) |
+| `Nome` | VARCHAR(100) | Nome do usuário |
+| `Email` | VARCHAR(255) | E-mail utilizado para autenticação |
+| `SenhaHash` | LONGTEXT | Hash da senha gerado utilizando BCrypt |
+| `DataCriacao` | DATETIME(6) | Data e hora de criação da conta |
 
-O campo `Email` possui restrição de **unicidade**, impedindo o cadastro de mais de uma conta com o mesmo endereço de e-mail.
+O campo `Email` possui restrição de **unicidade** (`UNIQUE INDEX`), impedindo o cadastro de mais de uma conta com o mesmo endereço de e-mail.
+
+---
 
 ### Tabela `Livros`
 
-| Campo          | Tipo         | Descrição                                   |
-| -------------- | ------------ | ------------------------------------------- |
-| `Id`           | INT (PK)     | Identificador único do livro                |
-| `UsuarioId`    | INT (FK)     | Referência ao usuário proprietário do livro |
-| `Titulo`       | VARCHAR(300) | Título do livro                             |
-| `Autor`        | VARCHAR(200) | Autor do livro                              |
-| `TotalPaginas` | INT          | Número total de páginas                     |
-| `PaginasLidas` | INT          | Quantidade de páginas já lidas              |
-| `DataCadastro` | DATETIME     | Data de cadastro do livro                   |
+| Campo | Tipo | Descrição |
+| :--- | :--- | :--- |
+| `Id` | INT (PK) | Identificador único do livro (Auto Increment) |
+| `Titulo` | VARCHAR(300) | Título da obra |
+| `Autor` | VARCHAR(200) | Autor da obra (opcional) |
+| `Genero` | VARCHAR(100) | Gênero literário (opcional) |
+| `TotalPaginas` | INT | Número total de páginas do livro |
+| `DataCadastro` | DATETIME(6) | Data e hora de cadastro do livro |
+| `UsuarioId` | INT (FK) | Referência ao usuário proprietário (`ON DELETE CASCADE`) |
+
+---
 
 ### Relacionamento
 
 ```text
 Usuarios
    │
-   │ 1
+   1
    │
-   │ N
+   N
    ▼
-Livros
+ Livros
 ```
 
 **Relacionamento:** `Usuarios (1) — (N) Livros`
@@ -120,21 +124,44 @@ O fluxo de autenticação funciona da seguinte forma:
 
 # 🔌 Endpoints da API REST
 
-## Autenticação — `/api/Auth`
+## Autenticação – `/api/Auth`
 
-| Método | Rota                 | Autenticação | Descrição                                  |
-| ------ | -------------------- | ------------ | ------------------------------------------ |
-| `POST` | `/api/Auth/register` | Não          | Cria uma nova conta de usuário             |
-| `POST` | `/api/Auth/login`    | Não          | Autentica o usuário e retorna um token JWT |
+| Método | Rota | Autenticação | Descrição |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/Auth/register` | Não | Cria uma nova conta de usuário (`nome`, `email`, `senha`) |
+| `POST` | `/api/Auth/login` | Não | Autentica o usuário (`email`, `senha`) e retorna um token JWT |
 
-## Livros — `/api/Livros`
+### Schemas de Requisição (Auth)
 
-| Método | Rota          | Autenticação | Descrição                                               |
-| ------ | ------------- | ------------ | ------------------------------------------------------- |
-| `GET`  | `/api/Livros` | Bearer Token | Lista os livros da estante do usuário autenticado       |
+* **`RegisterDto`**
+  * `nome` (string, obrigatório, máx: 100 caracteres)
+  * `email` (string, formato email, obrigatório, máx: 255 caracteres)
+  * `senha` (string, obrigatório, mín: 6 caracteres)
+
+* **`LoginDto`**
+  * `email` (string, formato email, obrigatório)
+  * `senha` (string, obrigatório)
+
+---
+
+## Livros – `/api/Livros`
+
+| Método | Rota | Autenticação | Descrição |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/Livros` | Bearer Token | Lista os livros da estante do usuário autenticado |
 | `POST` | `/api/Livros` | Bearer Token | Adiciona um novo livro à estante do usuário autenticado |
 
-### Autorização
+### Schema de Requisição (Livros)
+
+* **`CreateLivroDto`**
+  * `titulo` (string, obrigatório, máx: 300 caracteres)
+  * `totalPaginas` (integer, obrigatório, mín: 1)
+  * `autor` (string, opcional, máx: 200 caracteres)
+  * `genero` (string, opcional, máx: 100 caracteres)
+
+---
+
+### 🔒 Autorização
 
 Os endpoints de livros utilizam autenticação **Bearer Token**.
 
@@ -249,23 +276,21 @@ Também é recomendado possuir:
 
 ---
 
-# 🗄️ 1. Configuração do Banco de Dados
+### 🗄️ 1. Configuração do Banco de Dados
 
 Certifique-se de que o serviço do **MySQL Server** esteja em execução.
 
-Crie o banco de dados:
+Neste projeto, o banco de dados e suas tabelas podem ser criados através do script:
+* `create_database_mysql.sql`
 
-```sql
-CREATE DATABASE booklogImpacta;
-```
+Execute esse script no MySQL para criar o banco de dados `booklogImpacta` e suas respectivas tabelas.
 
-Em seguida, configure a string de conexão no arquivo:
+> ⚠️ **Atenção:** Não é necessário executar o script e as migrations para criar a mesma estrutura. Para o estado atual do projeto, o script SQL é a forma mais direta.
 
-```text
-BackEnd/appsettings.json
-```
+Depois, configure a string de conexão no arquivo:
+* `BackEnd/appsettings.json`
 
-Exemplo:
+**Exemplo:**
 
 ```json
 {
@@ -273,18 +298,6 @@ Exemplo:
     "DefaultConnection": "server=localhost;database=booklogImpacta;user=SEU_USUARIO;password=SUA_SENHA"
   }
 }
-```
-
-> ⚠️ Substitua `SEU_USUARIO` e `SUA_SENHA` pelas credenciais do seu ambiente MySQL.
-
-Depois, execute as migrations do Entity Framework Core para criar as tabelas:
-
-```bash
-dotnet ef database update
-```
-
----
-
 # ⚙️ 2. Executar o BackEnd
 
 Abra um terminal e acesse a pasta do BackEnd:
@@ -381,37 +394,43 @@ Em um dispositivo físico, pode ser necessário utilizar o **endereço IP local 
 
 ---
 
-# 📂 Estrutura do Projeto
+## 📁 Estrutura do Projeto
 
 O projeto está organizado separando o BackEnd e o FrontEnd:
 
 ```text
-BookLog/
+BookLogImpacta/
 │
 ├── BackEnd/
 │   ├── Controllers/
 │   ├── Data/
 │   ├── DTOs/
 │   ├── Models/
-│   ├── Services/
-│   ├── Migrations/
 │   ├── Properties/
+│   ├── scripts/
+│   ├── Services/
+│   ├── appsettings.Development.json
 │   ├── appsettings.json
+│   ├── BackEnd.csproj
+│   ├── BackEnd.http
 │   └── Program.cs
 │
-├── FrontEnd/
+├── frontend/
+│   ├── android/
+│   ├── assets/
 │   ├── lib/
+│   │   ├── core/
+│   │   ├── models/
 │   │   ├── screens/
 │   │   ├── services/
-│   │   ├── models/
-│   │   └── ...
-│   ├── android/
+│   │   └── main.dart
+│   ├── test/
 │   ├── web/
+│   ├── analysis_options.yaml
 │   ├── pubspec.yaml
-│   └── ...
+│   └── README.md
 │
-└── README.md
-```
+└── .gitignore
 
 A estrutura pode evoluir conforme novas funcionalidades forem implementadas.
 
