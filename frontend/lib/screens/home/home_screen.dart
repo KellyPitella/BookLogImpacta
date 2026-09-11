@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../core/widgets/app_settings_sheet.dart';
+import '../../services/auth_service.dart';
+import '../../services/livro_service.dart';
 import '../books/add_book_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -12,9 +14,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   static const String _logoAssetPath = 'assets/images/BookLog_Logo.png';
+  final _livroService = LivroService();
+  final _authService = AuthService();
 
   int _selectedCategoryIndex = 0;
   int _currentNavIndex = 0;
+  String _userName = 'BookLog';
 
   final List<String> _categories = [
     'Lendo (3)',
@@ -23,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
     'Favoritos',
   ];
 
-  final List<Map<String, dynamic>> _books = [
+  List<Map<String, dynamic>> _books = [
     {
       'title': 'O Vento Frio da Montanha',
       'author': 'Elena Rostova',
@@ -47,12 +52,46 @@ class _HomeScreenState extends State<HomeScreen> {
     },
   ];
 
-  // Cores de marca (fixas nos dois temas)
-  static const Color primaryColor = Color(0xFF16332D); // Verde Floresta
+  @override
+  void initState() {
+    super.initState();
+    _carregarUsuario();
+    _carregarLivros();
+  }
+
+  Future<void> _carregarUsuario() async {
+    final usuario = await _authService.getCurrentUser();
+    if (!mounted || usuario == null || usuario.nome.trim().isEmpty) return;
+    setState(() {
+      _userName = usuario.nome;
+    });
+  }
+
+  Future<void> _carregarLivros() async {
+    try {
+      final livros = await _livroService.listarLivros();
+      if (!mounted) return;
+      setState(() {
+        _books = livros
+            .map(
+              (livro) => {
+                'title': livro['titulo'] as String? ?? '',
+                'author': livro['autor'] as String? ?? '',
+                'progress': 0.0,
+                'percentage': 0,
+                'coverColor': primaryColor,
+              },
+            )
+            .toList();
+      });
+    } on LivroException catch (error) {
+      debugPrint('Erro ao carregar livros: ${error.message}');
+    }
+  }
+
+  static const Color primaryColor = Color(0xFF16332D);
   static const Color secondaryContainer = Color(0xFFC9E8CB);
-  static const Color tertiaryFixedDim = Color(
-    0xFFF5BB88,
-  ); // Terracota / Pêssego
+  static const Color tertiaryFixedDim = Color(0xFFF5BB88);
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +107,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final surfaceContainerHigh = colorScheme.surfaceContainerHigh;
 
     return Scaffold(
-      // --- TopAppBar ---
       appBar: AppBar(
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -101,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(width: 12),
             Text(
-              'BookLog',
+              _userName,
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w700,
@@ -122,13 +160,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
 
-      // --- Body ---
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Saudação
             Text(
               'Sua Estante',
               style: TextStyle(
@@ -145,7 +181,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Chips de Categoria (Rolagem Horizontal)
             SizedBox(
               height: 40,
               child: ListView.separated(
@@ -166,7 +201,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: isSelected ? chipSelectedColor : surfaceContainer,
+                        color: isSelected
+                            ? chipSelectedColor
+                            : surfaceContainer,
                         borderRadius: BorderRadius.circular(999),
                       ),
                       alignment: Alignment.center,
@@ -187,7 +224,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Grid de Livros (2 colunas)
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -197,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisSpacing: 16,
                 childAspectRatio: 0.58,
               ),
-              itemCount: _books.length + 1, // +1 para o card "Novo Livro"
+              itemCount: _books.length + 1,
               itemBuilder: (context, index) {
                 if (index < _books.length) {
                   final book = _books[index];
@@ -218,10 +254,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
 
-      // --- Botão Flutuante (FAB) ---
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.pushNamed(context, '/add-book');
+          Navigator.pushNamed(
+            context,
+            '/add-book',
+          ).then((_) => _carregarLivros());
         },
         backgroundColor: isDarkMode ? colorScheme.primary : primaryColor,
         foregroundColor: isDarkMode ? colorScheme.onPrimary : Colors.white,
@@ -230,7 +268,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: const Icon(Icons.add, size: 28),
       ),
 
-      // --- Bottom Navigation Bar ---
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: colorScheme.surface,
@@ -267,7 +304,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Card do Livro
   Widget _buildBookCard({
     required String title,
     required String author,
@@ -298,7 +334,6 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Capa do Livro (Mockup elegante)
                 Expanded(
                   flex: 3,
                   child: Container(
@@ -313,7 +348,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                // Informações e Progresso
                 Expanded(
                   flex: 2,
                   child: Padding(
@@ -397,7 +431,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Card Tracejado: Adicionar Novo Livro
   Widget _buildAddNewBookCard() {
     return Builder(
       builder: (context) {
@@ -410,7 +443,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const AddBookScreen()),
-            );
+            ).then((_) => _carregarLivros());
           },
           child: Container(
             decoration: BoxDecoration(
@@ -419,11 +452,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 end: Alignment.bottomRight,
                 colors: isDarkMode
                     ? [
-                        colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+                        colorScheme.surfaceContainerHighest.withValues(
+                          alpha: 0.35,
+                        ),
                         colorScheme.surfaceContainerLow,
                       ]
                     : [
-                        colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+                        colorScheme.surfaceContainerHighest.withValues(
+                          alpha: 0.2,
+                        ),
                         colorScheme.surfaceContainerLow,
                       ],
               ),
@@ -474,7 +511,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Item da Bottom Bar
   Widget _buildNavItem({
     required IconData icon,
     required String label,
@@ -525,7 +561,10 @@ class _HomeScreenState extends State<HomeScreen> {
               _currentNavIndex = index;
             });
             if (index == 1) {
-              Navigator.pushNamed(context, '/add-book');
+              Navigator.pushNamed(
+                context,
+                '/add-book',
+              ).then((_) => _carregarLivros());
             } else if (index == 2) {
               Navigator.pushNamed(context, '/summary');
             }
@@ -536,11 +575,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  icon,
-                  size: 22,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+                Icon(icon, size: 22, color: theme.colorScheme.onSurfaceVariant),
                 const SizedBox(height: 2),
                 Text(
                   label,

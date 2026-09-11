@@ -8,7 +8,6 @@ using BookLog.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Configuração do CORS (Permite que o Flutter Web acesse a API)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -19,10 +18,8 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Controllers
 builder.Services.AddControllers();
 
-// Banco de dados MySQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<BookLogContext>(options =>
@@ -32,11 +29,9 @@ builder.Services.AddDbContext<BookLogContext>(options =>
     )
 );
 
-// Services
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<LivroService>();
 
-// JWT
 var jwtKey = builder.Configuration["Jwt:Key"]!;
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -60,16 +55,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// 2. Ativação do CORS (Deve ficar antes de Authentication e Authorization)
 app.UseCors("AllowAll");
 
-// Swagger
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

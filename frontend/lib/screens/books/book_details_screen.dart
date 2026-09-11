@@ -10,13 +10,11 @@ class BookDetailsScreen extends StatefulWidget {
 }
 
 class _BookDetailsScreenState extends State<BookDetailsScreen> {
-  // Estados do livro e progresso
   int totalPages = 480;
   int currentPage = 342;
   bool isEditingProgress = false;
   late TextEditingController _pageInputController;
 
-  // Histórico de Leitura
   final List<Map<String, dynamic>> history = [
     {
       'date': 'Hoje',
@@ -38,9 +36,8 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
     },
   ];
 
-  // Cores de marca (fixas nos dois temas)
-  static const Color primaryColor = Color(0xFF16332D); // Verde Floresta
-  static const Color secondaryColor = Color(0xFF4A654E); // Verde Musgo
+  static const Color primaryColor = Color(0xFF16332D);
+  static const Color secondaryColor = Color(0xFF4A654E);
   static const Color secondaryContainer = Color(0xFFC9E8CB);
   static const Color onSecondaryContainer = Color(0xFF4E6952);
 
@@ -72,7 +69,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
         }
         isEditingProgress = false;
       });
-      // Chamada para a API: POST /api/Progresso (CreateProgressoDto)[cite: 3]
       debugPrint('Novo progresso salvo: $currentPage / $totalPages');
     }
   }
@@ -90,7 +86,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
     final surfaceVariant = colorScheme.surfaceContainerHighest;
 
     return Scaffold(
-      // --- TopAppBar ---
       appBar: AppBar(
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -128,13 +123,11 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
         ],
       ),
 
-      // --- Body ---
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Botão Voltar
             InkWell(
               onTap: () => Navigator.pop(context),
               borderRadius: BorderRadius.circular(8),
@@ -160,7 +153,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
             ),
             const SizedBox(height: 16),
 
-            // --- Card de Informações do Livro ---
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -177,7 +169,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Capa do Livro (Container com sombra)
                   Container(
                     width: 110,
                     height: 160,
@@ -202,12 +193,10 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                   ),
                   const SizedBox(width: 20),
 
-                  // Detalhes do Livro
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Tags
                         Wrap(
                           spacing: 6,
                           runSpacing: 4,
@@ -263,7 +252,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                         ),
                         const SizedBox(height: 10),
 
-                        // Título e Autor
                         Text(
                           'O Silêncio das Estrelas',
                           style: TextStyle(
@@ -283,7 +271,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Rodapé do Card: Páginas e Início
                         Container(
                           padding: const EdgeInsets.only(top: 12),
                           decoration: BoxDecoration(
@@ -353,7 +340,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
             ),
             const SizedBox(height: 16),
 
-            // --- Card de Progresso Circular & Ação ---
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -368,7 +354,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                 ],
               ),
               child: isEditingProgress
-                  // Modo Formulário Aberto
                   ? Column(
                       children: [
                         Row(
@@ -449,7 +434,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                         ),
                       ],
                     )
-                  // Modo Visualização com Gráfico Circular
                   : Column(
                       children: [
                         Align(
@@ -470,7 +454,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
-                              // Anel de fundo
                               SizedBox(
                                 width: 140,
                                 height: 140,
@@ -480,7 +463,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                                   color: surfaceVariant,
                                 ),
                               ),
-                              // Anel de Progresso
                               SizedBox(
                                 width: 140,
                                 height: 140,
@@ -491,7 +473,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                                   color: secondaryColor,
                                 ),
                               ),
-                              // Texto Central
                               Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -552,7 +533,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
             ),
             const SizedBox(height: 16),
 
-            // --- Card de Histórico de Leitura ---
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(

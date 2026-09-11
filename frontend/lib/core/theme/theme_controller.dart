@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Controlador global do tema (claro/escuro) do app, ouvido pelo MaterialApp.
 class ThemeController {
   ThemeController._();
 

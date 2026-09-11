@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../services/livro_service.dart';
+
 class AddBookScreen extends StatefulWidget {
   const AddBookScreen({super.key});
 
@@ -8,8 +10,10 @@ class AddBookScreen extends StatefulWidget {
 }
 
 class _AddBookScreenState extends State<AddBookScreen> {
+  final _livroService = LivroService();
   final _tituloController = TextEditingController();
   final _autorController = TextEditingController();
+  final _generoController = TextEditingController();
   final _paginasController = TextEditingController();
   final _paginasLidasController = TextEditingController(text: '0');
 
@@ -17,16 +21,17 @@ class _AddBookScreenState extends State<AddBookScreen> {
   void dispose() {
     _tituloController.dispose();
     _autorController.dispose();
+    _generoController.dispose();
     _paginasController.dispose();
     _paginasLidasController.dispose();
     super.dispose();
   }
 
-  void _salvarLivro() {
+  Future<void> _salvarLivro() async {
     final titulo = _tituloController.text.trim();
     final autor = _autorController.text.trim();
+    final genero = _generoController.text.trim();
     final totalPaginas = int.tryParse(_paginasController.text) ?? 0;
-    final paginasLidas = int.tryParse(_paginasLidasController.text) ?? 0;
 
     if (titulo.isEmpty || autor.isEmpty || totalPaginas <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -37,11 +42,21 @@ class _AddBookScreenState extends State<AddBookScreen> {
       return;
     }
 
-    // Chamada para a API: POST /api/Livros (CreateLivroDto)[cite: 2]
-    debugPrint(
-      'Livro: $titulo | Autor: $autor | Páginas: $totalPaginas | Lidas: $paginasLidas',
-    );
-    Navigator.pop(context);
+    try {
+      await _livroService.criarLivro(
+        titulo: titulo,
+        autor: autor,
+        genero: genero,
+        totalPaginas: totalPaginas,
+      );
+
+      if (mounted) Navigator.pop(context, true);
+    } on LivroException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
   }
 
   @override
@@ -92,7 +107,6 @@ class _AddBookScreenState extends State<AddBookScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // --- Campo: Título ---
                 _buildLabel('TÍTULO DO LIVRO'),
                 const SizedBox(height: 6),
                 _buildUnderlineInput(
@@ -101,7 +115,6 @@ class _AddBookScreenState extends State<AddBookScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // --- Campo: Autor ---
                 _buildLabel('AUTOR'),
                 const SizedBox(height: 6),
                 _buildUnderlineInput(
@@ -110,7 +123,14 @@ class _AddBookScreenState extends State<AddBookScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // --- Grid: Páginas & Meta ---
+                _buildLabel('GÊNERO'),
+                const SizedBox(height: 6),
+                _buildUnderlineInput(
+                  controller: _generoController,
+                  hintText: 'Ex: Ficção, Romance, Fantasia',
+                ),
+                const SizedBox(height: 20),
+
                 Row(
                   children: [
                     Expanded(
@@ -146,13 +166,10 @@ class _AddBookScreenState extends State<AddBookScreen> {
                 ),
                 const SizedBox(height: 28),
 
-                // --- Upload de Capa ---
                 _buildLabel('CAPA (OPCIONAL)'),
                 const SizedBox(height: 8),
                 InkWell(
-                  onTap: () {
-                    // Lógica de seleção/upload de imagem
-                  },
+                  onTap: () {},
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -191,7 +208,6 @@ class _AddBookScreenState extends State<AddBookScreen> {
                 ),
                 const SizedBox(height: 36),
 
-                // --- Ações (Cancelar / Salvar) ---
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [

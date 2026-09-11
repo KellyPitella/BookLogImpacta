@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 
-/// Paleta de cores do BookLog (Verde Floresta, Sálvia, Terracota, Off-white).
 class AppColors {
   AppColors._();
 
-  // Cores de marca
-  static const Color primary = Color(0xFF16332D); // Verde Floresta (Light)
-  static const Color primaryLight = Color(0xFFADCDC4); // Verde Sálvia suave (Dark)
+  static const Color primary = Color(0xFF16332D);
+  static const Color primaryLight = Color(0xFFADCDC4);
   static const Color primaryContainer = Color(0xFF2D4A43);
   static const Color secondaryContainer = Color(0xFFC9E8CB);
-  static const Color tertiaryFixedDim = Color(0xFFF5BB88); // Terracota / Pêssego
+  static const Color tertiaryFixedDim = Color(0xFFF5BB88);
   static const Color error = Color(0xFFBA1A1A);
 
-  // --- Tema Claro ---
   static const Color backgroundLight = Color(0xFFF9F9F8);
   static const Color surfaceLight = Color(0xFFFFFFFF);
   static const Color onSurfaceLight = Color(0xFF1A1C1C);
@@ -24,10 +21,9 @@ class AppColors {
   static const Color surfaceContainerLowLight = Color(0xFFF3F4F3);
   static const Color surfaceVariantLight = Color(0xFFE2E2E2);
 
-  // --- Tema Escuro ---
-  static const Color backgroundDark = Color(0xFF10201B); // Verde Floresta Profundo
-  static const Color surfaceDark = Color(0xFF172B25); // Superfície dos cards
-  static const Color onSurfaceDark = Color(0xFFE3E5E3); // Off-white suave
+  static const Color backgroundDark = Color(0xFF10201B);
+  static const Color surfaceDark = Color(0xFF172B25);
+  static const Color onSurfaceDark = Color(0xFFE3E5E3);
   static const Color onSurfaceVariantDark = Color(0xFFC1C8C5);
   static const Color outlineDark = Color(0xFF8B9490);
   static const Color outlineVariantDark = Color(0xFF3A423E);

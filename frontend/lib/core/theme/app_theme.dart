@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
-/// Temas padronizados (Claro / Escuro) do BookLog.
 class AppTheme {
   AppTheme._();
 
-  // --- Tema Claro ---
   static final ThemeData light = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
@@ -40,7 +38,6 @@ class AppTheme {
     ),
   );
 
-  // --- Tema Escuro ---
   static final ThemeData dark = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
@@ -53,15 +50,12 @@ class AppTheme {
       primaryContainer: Color.fromARGB(255, 167, 192, 186),
       onPrimaryContainer: Color.fromARGB(255, 243, 250, 248),
 
-      // Secundário mais neutro
       secondary: AppColors.onSurfaceVariantDark,
 
-      // Superfície escura para containers
       secondaryContainer: AppColors.surfaceContainerHighDark,
 
       tertiary: AppColors.tertiaryFixedDim,
 
-      // Fundos e superfícies
       surface: AppColors.surfaceDark,
 
       onSurface: AppColors.onSurfaceDark,

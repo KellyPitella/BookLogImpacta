@@ -48,9 +48,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -75,7 +75,6 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 24),
 
-                // --- Logo ---
                 Center(
                   child: Image.asset(
                     'assets/images/BookLog_Logo.png',
@@ -85,7 +84,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // --- Header / Brand ---
                 Text(
                   'BookLog',
                   textAlign: TextAlign.center,
@@ -108,7 +106,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 48),
 
-                // --- Campo E-mail ---
                 Text(
                   'E-mail',
                   style: TextStyle(
@@ -149,7 +146,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 28),
 
-                // --- Campo Senha ---
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -163,9 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () {
-                        // Recuperação de senha
-                      },
+                      onTap: () {},
                       child: Text(
                         'Esqueci minha senha',
                         style: TextStyle(
@@ -184,10 +178,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: TextStyle(fontSize: 16, color: onSurfaceColor),
                   decoration: InputDecoration(
                     hintText: '••••••••',
-                    hintStyle: TextStyle(
-                      color: outlineVariant,
-                      fontSize: 15,
-                    ),
+                    hintStyle: TextStyle(color: outlineVariant, fontSize: 15),
                     prefixIcon: Icon(
                       Icons.lock_outline,
                       color: outlineColor,
@@ -225,7 +216,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 36),
 
-                // --- Botão Entrar ---
                 ElevatedButton(
                   onPressed: _isLoading ? null : _handleLogin,
                   style: ElevatedButton.styleFrom(
@@ -243,18 +233,22 @@ class _LoginScreenState extends State<LoginScreen> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Text(
                           'Entrar',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                 ),
 
                 const SizedBox(height: 48),
 
-                // --- Footer: Criar Conta ---
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12.0),
                   child: Row(
@@ -295,4 +289,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-

@@ -59,9 +59,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -76,7 +76,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            // Efeitos de Luz / Círculos de Fundo
             Positioned(
               top: -80,
               left: -80,
@@ -102,7 +101,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
 
-            // Conteúdo em Tela Cheia com Rolagem
             SizedBox.expand(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
@@ -114,7 +112,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     const SizedBox(height: 16),
 
-                    // Ícone / Logo do Topo
                     Center(
                       child: Container(
                         width: 80,
@@ -135,7 +132,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Título e Subtítulo
                     Text(
                       'Criar Conta',
                       textAlign: TextAlign.center,
@@ -158,7 +154,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 36),
 
-                    // Campo: Nome
                     _buildInputLabel('NOME'),
                     const SizedBox(height: 4),
                     _buildTextField(
@@ -169,7 +164,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 22),
 
-                    // Campo: E-mail
                     _buildInputLabel('E-MAIL'),
                     const SizedBox(height: 4),
                     _buildTextField(
@@ -180,7 +174,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 22),
 
-                    // Campo: Senha
                     _buildInputLabel('SENHA'),
                     const SizedBox(height: 4),
                     _buildTextField(
@@ -205,7 +198,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 36),
 
-                    // Botão Criar Conta
                     ElevatedButton(
                       onPressed: _isLoading ? null : _handleRegister,
                       style: ElevatedButton.styleFrom(
@@ -223,7 +215,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
                               ),
                             )
                           : const Row(
@@ -243,7 +237,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 28),
 
-                    // Rodapé: Voltar para Login
                     Center(
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,

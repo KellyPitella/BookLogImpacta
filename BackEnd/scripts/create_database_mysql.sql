@@ -1,12 +1,7 @@
--- BookLog Database Script (MySQL)
--- Etapa 1: Cadastro, Login e Estante
-
--- Criar banco de dados
 CREATE DATABASE IF NOT EXISTS booklogImpacta;
 
 USE booklogImpacta;
 
--- Tabela de Usuarios
 CREATE TABLE IF NOT EXISTS Usuarios (
     Id INT AUTO_INCREMENT PRIMARY KEY,
     Nome VARCHAR(100) NOT NULL,
@@ -18,7 +13,6 @@ CREATE TABLE IF NOT EXISTS Usuarios (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
--- Tabela de Livros
 CREATE TABLE IF NOT EXISTS Livros (
     Id INT AUTO_INCREMENT PRIMARY KEY,
     Titulo VARCHAR(300) NOT NULL,
