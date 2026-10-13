@@ -1,40 +1,28 @@
 import 'package:flutter/material.dart';
 
 import '../../core/widgets/app_settings_sheet.dart';
+import '../../models/book_model.dart';
+import '../../services/progress_service.dart';
 
 class BookDetailsScreen extends StatefulWidget {
-  const BookDetailsScreen({super.key});
+  final BookModel book;
+
+  const BookDetailsScreen({super.key, required this.book});
 
   @override
   State<BookDetailsScreen> createState() => _BookDetailsScreenState();
 }
 
 class _BookDetailsScreenState extends State<BookDetailsScreen> {
-  int totalPages = 480;
-  int currentPage = 342;
+  final ProgressService _progressService = ProgressService();
+  late int totalPages;
+  late int currentPage;
   bool isEditingProgress = false;
+  bool _loadingHistory = true;
+  bool _savingProgress = false;
   late TextEditingController _pageInputController;
-
-  final List<Map<String, dynamic>> history = [
-    {
-      'date': 'Hoje',
-      'session': 'Sessão matinal',
-      'pages': 24,
-      'isRecent': true,
-    },
-    {
-      'date': '22 Out',
-      'session': 'Leitura noturna',
-      'pages': 45,
-      'isRecent': false,
-    },
-    {
-      'date': '18 Out',
-      'session': 'Fim de semana',
-      'pages': 60,
-      'isRecent': false,
-    },
-  ];
+  final TextEditingController _noteInputController = TextEditingController();
+  List<ProgressItem> history = [];
 
   static const Color primaryColor = Color(0xFF16332D);
   static const Color secondaryColor = Color(0xFF4A654E);
@@ -44,33 +32,88 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    totalPages = widget.book.totalPaginas;
+    currentPage = widget.book.paginasLidas;
     _pageInputController = TextEditingController(text: currentPage.toString());
+    _loadHistory();
   }
 
   @override
   void dispose() {
     _pageInputController.dispose();
+    _noteInputController.dispose();
     super.dispose();
   }
 
-  void _saveProgress() {
+  Future<void> _loadHistory() async {
+    try {
+      final items = await _progressService.getProgressosPorLivro(
+        widget.book.id,
+      );
+      if (!mounted) return;
+      setState(() {
+        history = items;
+        _loadingHistory = false;
+      });
+    } on ProgressException catch (error) {
+      if (!mounted) return;
+      setState(() => _loadingHistory = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
+  Future<void> _saveProgress() async {
     final inputVal = int.tryParse(_pageInputController.text);
-    if (inputVal != null && inputVal >= 0 && inputVal <= totalPages) {
-      final addedPages = inputVal - currentPage;
+    if (inputVal == null || inputVal <= currentPage || inputVal > totalPages) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Informe uma página entre ${currentPage + 1} e $totalPages.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final addedPages = inputVal - currentPage;
+    setState(() => _savingProgress = true);
+    try {
+      final progress = await _progressService.registrarProgresso(
+        livroId: widget.book.id,
+        paginasLidas: addedPages,
+        nota: _noteInputController.text.trim(),
+      );
+      if (!mounted) return;
       setState(() {
         currentPage = inputVal;
-        if (addedPages > 0) {
-          history.insert(0, {
-            'date': 'Hoje',
-            'session': 'Registro recente',
-            'pages': addedPages,
-            'isRecent': true,
-          });
-        }
+        history.insert(0, progress);
         isEditingProgress = false;
+        _savingProgress = false;
+        _noteInputController.clear();
       });
-      debugPrint('Novo progresso salvo: $currentPage / $totalPages');
+    } on ProgressException catch (error) {
+      if (!mounted) return;
+      setState(() => _savingProgress = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     }
+  }
+
+  String _formatDate(DateTime date) {
+    final localDate = date.toLocal();
+    final now = DateTime.now();
+    if (localDate.year == now.year &&
+        localDate.month == now.month &&
+        localDate.day == now.day) {
+      return 'Hoje';
+    }
+
+    final day = localDate.day.toString().padLeft(2, '0');
+    final month = localDate.month.toString().padLeft(2, '0');
+    return '$day/$month/${localDate.year}';
   }
 
   @override
@@ -211,7 +254,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                                 borderRadius: BorderRadius.circular(999),
                               ),
                               child: Text(
-                                'Ficção Literária',
+                                widget.book.genero ?? 'Sem gênero',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w500,
@@ -253,7 +296,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                         const SizedBox(height: 10),
 
                         Text(
-                          'O Silêncio das Estrelas',
+                          widget.book.titulo,
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
@@ -263,7 +306,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'por Elena Rostova',
+                          'por ${widget.book.autor ?? 'Autor desconhecido'}',
                           style: TextStyle(
                             fontSize: 14,
                             color: onSurfaceVariant,
@@ -320,7 +363,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    '12 Out 2023',
+                                    _formatDate(widget.book.dataCadastro),
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
@@ -416,9 +459,22 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 20),
+                        TextField(
+                          controller: _noteInputController,
+                          maxLength: 500,
+                          maxLines: 2,
+                          textCapitalization: TextCapitalization.sentences,
+                          decoration: const InputDecoration(
+                            labelText: 'Nota da leitura (opcional)',
+                            hintText: 'Adicione uma observação sobre a sessão',
+                            border: OutlineInputBorder(),
+                            alignLabelWithHint: true,
+                          ),
+                        ),
                         const SizedBox(height: 24),
                         ElevatedButton(
-                          onPressed: _saveProgress,
+                          onPressed: _savingProgress ? null : _saveProgress,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: secondaryColor,
                             foregroundColor: Colors.white,
@@ -430,7 +486,15 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                               borderRadius: BorderRadius.circular(999),
                             ),
                           ),
-                          child: const Text('Salvar'),
+                          child: _savingProgress
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text('Salvar'),
                         ),
                       ],
                     )
@@ -563,97 +627,117 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: history.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final item = history[index];
-                      final isRecent = item['isRecent'] as bool;
+                  if (_loadingHistory)
+                    const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (history.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text('Nenhuma sessão registrada ainda.'),
+                    )
+                  else
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: history.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final item = history[index];
+                        final isRecent = _formatDate(item.data) == 'Hoje';
 
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 38,
-                                  height: 38,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: isRecent
-                                        ? secondaryContainer
-                                        : surfaceContainer,
-                                  ),
-                                  child: Icon(
-                                    Icons.auto_stories,
-                                    size: 18,
-                                    color: isRecent
-                                        ? onSecondaryContainer
-                                        : onSurfaceVariant,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Row(
                                   children: [
-                                    Text(
-                                      item['date'] as String,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        color: onSurfaceColor,
+                                    Container(
+                                      width: 38,
+                                      height: 38,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: isRecent
+                                            ? secondaryContainer
+                                            : surfaceContainer,
+                                      ),
+                                      child: Icon(
+                                        Icons.auto_stories,
+                                        size: 18,
+                                        color: isRecent
+                                            ? onSecondaryContainer
+                                            : onSurfaceVariant,
                                       ),
                                     ),
-                                    Text(
-                                      item['session'] as String,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: onSurfaceVariant,
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _formatDate(item.data),
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                              color: onSurfaceColor,
+                                            ),
+                                          ),
+                                          Text(
+                                            item.nota?.isNotEmpty == true
+                                                ? item.nota!
+                                                : 'Sessão de leitura',
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  '+${item['pages']}',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: isRecent
-                                        ? secondaryColor
-                                        : onSurfaceVariant,
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '+${item.paginasLidas}',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: isRecent
+                                          ? secondaryColor
+                                          : onSurfaceVariant,
+                                    ),
                                   ),
-                                ),
-                                Text(
-                                  'páginas',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: onSurfaceVariant,
+                                  Text(
+                                    'páginas',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: onSurfaceVariant,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                 ],
               ),
             ),

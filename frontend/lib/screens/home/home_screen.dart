@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../core/widgets/app_settings_sheet.dart';
+import '../../models/book_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/livro_service.dart';
 import '../books/add_book_screen.dart';
+import '../books/book_details_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,29 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
     'Favoritos',
   ];
 
-  List<Map<String, dynamic>> _books = [
-    {
-      'title': 'O Vento Frio da Montanha',
-      'author': 'Elena Rostova',
-      'progress': 0.64,
-      'percentage': 64,
-      'coverColor': Color(0xFF5D8068),
-    },
-    {
-      'title': 'Silêncio Botânico',
-      'author': 'Arthur P. Mendes',
-      'progress': 0.21,
-      'percentage': 21,
-      'coverColor': Color(0xFF204430),
-    },
-    {
-      'title': 'A Arquitetura do Vazio',
-      'author': 'L. S. Vygotsky',
-      'progress': 0.89,
-      'percentage': 89,
-      'coverColor': Color(0xFF45634F),
-    },
-  ];
+  List<BookModel> _books = [];
 
   @override
   void initState() {
@@ -72,17 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final livros = await _livroService.listarLivros();
       if (!mounted) return;
       setState(() {
-        _books = livros
-            .map(
-              (livro) => {
-                'title': livro['titulo'] as String? ?? '',
-                'author': livro['autor'] as String? ?? '',
-                'progress': 0.0,
-                'percentage': 0,
-                'coverColor': primaryColor,
-              },
-            )
-            .toList();
+        _books = livros.map(BookModel.fromJson).toList();
       });
     } on LivroException catch (error) {
       debugPrint('Erro ao carregar livros: ${error.message}');
@@ -237,13 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
               itemBuilder: (context, index) {
                 if (index < _books.length) {
                   final book = _books[index];
-                  return _buildBookCard(
-                    title: book['title'] as String,
-                    author: book['author'] as String,
-                    progress: book['progress'] as double,
-                    percentage: book['percentage'] as int,
-                    coverColor: book['coverColor'] as Color,
-                  );
+                  return _buildBookCard(book: book);
                 } else {
                   return _buildAddNewBookCard();
                 }
@@ -304,19 +268,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBookCard({
-    required String title,
-    required String author,
-    required double progress,
-    required int percentage,
-    required Color coverColor,
-  }) {
+  Widget _buildBookCard({required BookModel book}) {
     return Builder(
       builder: (context) {
         final colorScheme = Theme.of(context).colorScheme;
         return GestureDetector(
           onTap: () {
-            Navigator.pushNamed(context, '/book-details');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BookDetailsScreen(book: book),
+              ),
+            ).then((_) => _carregarLivros());
           },
           child: Container(
             decoration: BoxDecoration(
@@ -338,7 +301,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   flex: 3,
                   child: Container(
                     width: double.infinity,
-                    color: coverColor,
+                    color: primaryColor,
                     child: const Center(
                       child: Icon(
                         Icons.auto_stories,
@@ -360,7 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              title,
+                              book.titulo,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -372,7 +335,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              author,
+                              book.autor ?? '',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -396,7 +359,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                                 Text(
-                                  '$percentage%',
+                                  '${book.percentualInt}%',
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600,
@@ -409,7 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(999),
                               child: LinearProgressIndicator(
-                                value: progress,
+                                value: book.progressFactor,
                                 minHeight: 5,
                                 backgroundColor: colorScheme.surfaceContainer,
                                 valueColor: const AlwaysStoppedAnimation<Color>(

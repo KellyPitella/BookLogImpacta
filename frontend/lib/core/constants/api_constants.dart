@@ -11,4 +11,11 @@ class ApiConstants {
   static String get login => '$baseUrl/Auth/login';
   static String get register => '$baseUrl/Auth/register';
   static String get livros => '$baseUrl/Livros';
+  static String livro(int id) => '$baseUrl/Livros/$id';
+  static String capaLivro(int livroId) => '$baseUrl/Livros/$livroId/capa';
+
+  static String get progresso => '$baseUrl/Progresso';
+  static String progressosPorLivro(int livroId) =>
+      '$baseUrl/Progresso/livro/$livroId';
+  static String get resumo => '$baseUrl/Progresso/resumo';
 }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -13,6 +14,16 @@ class LivroException implements Exception {
 
 class LivroService {
   final _authService = AuthService();
+
+  Future<Uint8List?> downloadCapa(int livroId) async {
+    final response = await http.get(
+      Uri.parse(ApiConstants.capaLivro(livroId)),
+      headers: await _headers(),
+    );
+
+    if (response.statusCode != 200) return null;
+    return response.bodyBytes;
+  }
 
   Future<Map<String, String>> _headers() async {
     final token = await _authService.getToken();
