@@ -12,6 +12,8 @@ public class BookLogContext : DbContext
 
     public DbSet<Livro> Livros { get; set; }
 
+    public DbSet<ProgressoLeitura> ProgressosLeitura { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -27,6 +29,11 @@ public class BookLogContext : DbContext
             entity.HasOne(e => e.Usuario)
                   .WithMany(e => e.Livros)
                   .HasForeignKey(e => e.UsuarioId);
+
+            entity.HasMany(e => e.Progressos)
+                .WithOne(e => e.Livro)
+                .HasForeignKey(e => e.LivroId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

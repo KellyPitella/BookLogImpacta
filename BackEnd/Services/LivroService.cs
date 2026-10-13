@@ -25,6 +25,8 @@ public class LivroService
                 Autor = l.Autor,
                 Genero = l.Genero,
                 TotalPaginas = l.TotalPaginas,
+                PaginasLidas = l.PaginasLidas,
+                Concluido = l.Concluido,
                 DataCadastro = l.DataCadastro
             })
             .OrderByDescending(l => l.DataCadastro)
@@ -55,6 +57,8 @@ public class LivroService
             Autor = livro.Autor,
             Genero = livro.Genero,
             TotalPaginas = livro.TotalPaginas,
+            PaginasLidas = livro.PaginasLidas,
+            Concluido = livro.Concluido,
             DataCadastro = livro.DataCadastro
         };
     }

@@ -31,6 +31,7 @@ builder.Services.AddDbContext<BookLogContext>(options =>
 
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<LivroService>();
+builder.Services.AddScoped<ProgressoService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"]!;
 

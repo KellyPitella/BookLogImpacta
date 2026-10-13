@@ -19,9 +19,15 @@ public class Livro
 
     public int TotalPaginas { get; set; }
 
+    public int PaginasLidas { get; set; }
+
+    public bool Concluido { get; set; }
+
     public DateTime DataCadastro { get; set; } = DateTime.UtcNow;
 
     public int UsuarioId { get; set; }
 
     public Usuario Usuario { get; set; } = null!;
+
+    public ICollection<ProgressoLeitura> Progressos { get; set; } = new List<ProgressoLeitura>();
 }
