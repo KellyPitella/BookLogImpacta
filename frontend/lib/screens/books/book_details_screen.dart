@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../core/widgets/app_settings_sheet.dart';
 import '../../models/book_model.dart';
+import '../../services/livro_service.dart';
 import '../../services/progress_service.dart';
+import 'add_book_screen.dart';
 
 class BookDetailsScreen extends StatefulWidget {
   final BookModel book;
@@ -14,10 +16,13 @@ class BookDetailsScreen extends StatefulWidget {
 }
 
 class _BookDetailsScreenState extends State<BookDetailsScreen> {
+  final LivroService _livroService = LivroService();
   final ProgressService _progressService = ProgressService();
+  late BookModel _book;
   late int totalPages;
   late int currentPage;
   bool isEditingProgress = false;
+  bool _deletingBook = false;
   bool _loadingHistory = true;
   bool _savingProgress = false;
   late TextEditingController _pageInputController;
@@ -32,8 +37,9 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    totalPages = widget.book.totalPaginas;
-    currentPage = widget.book.paginasLidas;
+    _book = widget.book;
+    totalPages = _book.totalPaginas;
+    currentPage = _book.paginasLidas;
     _pageInputController = TextEditingController(text: currentPage.toString());
     _loadHistory();
   }
@@ -99,6 +105,80 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
+  Future<void> _editBook() async {
+    final updatedBook = await Navigator.push<BookModel>(
+      context,
+      MaterialPageRoute(builder: (context) => AddBookScreen(book: _book)),
+    );
+
+    if (!mounted || updatedBook == null) return;
+    setState(() {
+      _book = updatedBook;
+      totalPages = updatedBook.totalPaginas;
+    });
+  }
+
+  Future<void> _deleteBook() async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Excluir livro?'),
+        content: Text(
+          'Deseja excluir "${_book.titulo}"? O histórico de leitura também será removido.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+            ),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true || !mounted) return;
+    setState(() => _deletingBook = true);
+    try {
+      await _livroService.deletarLivro(_book.id);
+      if (!mounted) return;
+
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          icon: Icon(
+            Icons.check_circle_outline,
+            color: Theme.of(dialogContext).colorScheme.primary,
+            size: 40,
+          ),
+          title: const Text('Livro excluído com sucesso'),
+          content: Text('"${_book.titulo}" foi removido da sua estante.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+
+      if (mounted) Navigator.pop(context, true);
+    } on LivroException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _deletingBook = false);
     }
   }
 
@@ -254,7 +334,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                                 borderRadius: BorderRadius.circular(999),
                               ),
                               child: Text(
-                                widget.book.genero ?? 'Sem gênero',
+                                _book.genero ?? 'Sem gênero',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w500,
@@ -296,7 +376,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                         const SizedBox(height: 10),
 
                         Text(
-                          widget.book.titulo,
+                          _book.titulo,
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
@@ -306,7 +386,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'por ${widget.book.autor ?? 'Autor desconhecido'}',
+                          'por ${_book.autor ?? 'Autor desconhecido'}',
                           style: TextStyle(
                             fontSize: 14,
                             color: onSurfaceVariant,
@@ -363,7 +443,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    _formatDate(widget.book.dataCadastro),
+                                    _formatDate(_book.dataCadastro),
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
@@ -379,6 +459,50 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                     ),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _deletingBook ? null : _editBook,
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('Editar informações do livro'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: secondaryColor,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: BorderSide(color: colorScheme.outlineVariant),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            OutlinedButton.icon(
+              onPressed: _deletingBook ? null : _deleteBook,
+              icon: _deletingBook
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.delete_outline, size: 16),
+              label: Text(
+                _deletingBook ? 'Excluindo livro...' : 'Excluir livro',
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: colorScheme.error,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                side: BorderSide(color: colorScheme.error),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             const SizedBox(height: 16),

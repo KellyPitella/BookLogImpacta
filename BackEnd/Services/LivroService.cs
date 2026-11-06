@@ -62,4 +62,55 @@ public class LivroService
             DataCadastro = livro.DataCadastro
         };
     }
+
+    public async Task<LivroDto?> UpdateLivro(
+        int livroId,
+        UpdateLivroDto dto,
+        int usuarioId)
+    {
+        var livro = await _context.Livros.FirstOrDefaultAsync(
+            item => item.Id == livroId && item.UsuarioId == usuarioId);
+
+        if (livro is null) return null;
+
+        var totalPaginas = dto.TotalPaginas ?? livro.TotalPaginas;
+        if (totalPaginas < livro.PaginasLidas)
+        {
+            throw new ArgumentException(
+                "O total de páginas não pode ser menor que as páginas já lidas.");
+        }
+
+        livro.Titulo = dto.Titulo ?? livro.Titulo;
+        livro.Autor = dto.Autor;
+        livro.Genero = dto.Genero;
+        livro.TotalPaginas = totalPaginas;
+        livro.Concluido = livro.PaginasLidas >= livro.TotalPaginas;
+
+        await _context.SaveChangesAsync();
+
+        return new LivroDto
+        {
+            Id = livro.Id,
+            Titulo = livro.Titulo,
+            Autor = livro.Autor,
+            Genero = livro.Genero,
+            TotalPaginas = livro.TotalPaginas,
+            PaginasLidas = livro.PaginasLidas,
+            Concluido = livro.Concluido,
+            DataCadastro = livro.DataCadastro
+        };
+    }
+
+    public async Task<bool> DeleteLivro(int livroId, int usuarioId)
+    {
+        var livro = await _context.Livros.FirstOrDefaultAsync(
+            item => item.Id == livroId && item.UsuarioId == usuarioId);
+
+        if (livro is null) return false;
+
+        _context.Livros.Remove(livro);
+        await _context.SaveChangesAsync();
+
+        return true;
+    }
 }

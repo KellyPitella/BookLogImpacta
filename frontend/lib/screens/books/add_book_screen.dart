@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../models/book_model.dart';
 import '../../services/livro_service.dart';
 
 class AddBookScreen extends StatefulWidget {
-  const AddBookScreen({super.key});
+  final BookModel? book;
+
+  const AddBookScreen({super.key, this.book});
 
   @override
   State<AddBookScreen> createState() => _AddBookScreenState();
@@ -16,6 +19,21 @@ class _AddBookScreenState extends State<AddBookScreen> {
   final _generoController = TextEditingController();
   final _paginasController = TextEditingController();
   final _paginasLidasController = TextEditingController(text: '0');
+  bool _isSaving = false;
+
+  bool get _isEditing => widget.book != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final book = widget.book;
+    if (book != null) {
+      _tituloController.text = book.titulo;
+      _autorController.text = book.autor ?? '';
+      _generoController.text = book.genero ?? '';
+      _paginasController.text = book.totalPaginas.toString();
+    }
+  }
 
   @override
   void dispose() {
@@ -32,30 +50,53 @@ class _AddBookScreenState extends State<AddBookScreen> {
     final autor = _autorController.text.trim();
     final genero = _generoController.text.trim();
     final totalPaginas = int.tryParse(_paginasController.text) ?? 0;
+    final book = widget.book;
 
-    if (titulo.isEmpty || autor.isEmpty || totalPaginas <= 0) {
+    if (titulo.isEmpty ||
+        (!_isEditing && autor.isEmpty) ||
+        totalPaginas <= 0 ||
+        (book != null && totalPaginas < book.paginasLidas)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Preencha os campos obrigatórios corretamente.'),
+        SnackBar(
+          content: Text(
+            book != null && totalPaginas < book.paginasLidas
+                ? 'O total de páginas não pode ser menor que as páginas já lidas.'
+                : 'Preencha os campos obrigatórios corretamente.',
+          ),
         ),
       );
       return;
     }
 
     try {
-      await _livroService.criarLivro(
-        titulo: titulo,
-        autor: autor,
-        genero: genero,
-        totalPaginas: totalPaginas,
-      );
+      setState(() => _isSaving = true);
+      if (book == null) {
+        await _livroService.criarLivro(
+          titulo: titulo,
+          autor: autor,
+          genero: genero,
+          totalPaginas: totalPaginas,
+        );
 
-      if (mounted) Navigator.pop(context, true);
+        if (mounted) Navigator.pop(context, true);
+      } else {
+        final updatedBook = await _livroService.atualizarLivro(
+          livroId: book.id,
+          titulo: titulo,
+          autor: autor,
+          genero: genero,
+          totalPaginas: totalPaginas,
+        );
+
+        if (mounted) Navigator.pop(context, updatedBook);
+      }
     } on LivroException catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -86,7 +127,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
         elevation: 0,
         foregroundColor: onSurfaceColor,
         title: Text(
-          'Adicionar Livro',
+          _isEditing ? 'Editar Livro' : 'Adicionar Livro',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -102,7 +143,9 @@ class _AddBookScreenState extends State<AddBookScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Preencha os detalhes da sua nova leitura.',
+                  _isEditing
+                      ? 'Atualize as informações deste livro.'
+                      : 'Preencha os detalhes da sua nova leitura.',
                   style: TextStyle(fontSize: 14, color: onSurfaceVariant),
                 ),
                 const SizedBox(height: 24),
@@ -148,20 +191,23 @@ class _AddBookScreenState extends State<AddBookScreen> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildLabel('PÁGINAS LIDAS'),
-                          const SizedBox(height: 6),
-                          _buildUnderlineInput(
-                            controller: _paginasLidasController,
-                            hintText: '0',
-                            keyboardType: TextInputType.number,
-                          ),
-                        ],
+                    if (!_isEditing) ...[
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildLabel('PÁGINAS LIDAS'),
+                            const SizedBox(height: 6),
+                            _buildUnderlineInput(
+                              controller: _paginasLidasController,
+                              hintText: '0',
+                              keyboardType: TextInputType.number,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 28),
@@ -212,7 +258,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: _isSaving ? null : () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: cancelForeground,
                         side: BorderSide(color: cancelBorder),
@@ -235,7 +281,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton(
-                      onPressed: _salvarLivro,
+                      onPressed: _isSaving ? null : _salvarLivro,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: saveBackground,
                         foregroundColor: saveForeground,
@@ -248,13 +294,22 @@ class _AddBookScreenState extends State<AddBookScreen> {
                         ),
                         elevation: 1,
                       ),
-                      child: const Text(
-                        'Salvar Livro',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              _isEditing ? 'Salvar Alterações' : 'Salvar Livro',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                     ),
                   ],
                 ),

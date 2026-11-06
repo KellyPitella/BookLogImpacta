@@ -47,4 +47,33 @@ public class LivrosController : ControllerBase
             livro
         );
     }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> UpdateLivro(
+        int id,
+        [FromBody] UpdateLivroDto dto)
+    {
+        try
+        {
+            var livro = await _livroService.UpdateLivro(
+                id,
+                dto,
+                GetUsuarioId()
+            );
+
+            return livro is null ? NotFound() : Ok(livro);
+        }
+        catch (ArgumentException error)
+        {
+            return BadRequest(new { message = error.Message });
+        }
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteLivro(int id)
+    {
+        var deleted = await _livroService.DeleteLivro(id, GetUsuarioId());
+
+        return deleted ? NoContent() : NotFound();
+    }
 }

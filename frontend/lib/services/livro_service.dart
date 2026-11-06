@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 import '../core/constants/api_constants.dart';
+import '../models/book_model.dart';
 import 'auth_service.dart';
 
 class LivroException implements Exception {
@@ -57,6 +58,48 @@ class LivroService {
     if (response.statusCode != 201) {
       throw LivroException(
         _messageFrom(response.body) ?? 'Não foi possível salvar o livro.',
+      );
+    }
+  }
+
+  Future<BookModel> atualizarLivro({
+    required int livroId,
+    required String titulo,
+    required String autor,
+    required String genero,
+    required int totalPaginas,
+  }) async {
+    final response = await http.put(
+      Uri.parse(ApiConstants.livro(livroId)),
+      headers: await _headers(),
+      body: jsonEncode({
+        'titulo': titulo,
+        'autor': autor.isEmpty ? null : autor,
+        'genero': genero.isEmpty ? null : genero,
+        'totalPaginas': totalPaginas,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw LivroException(
+        _messageFrom(response.body) ?? 'Não foi possível atualizar o livro.',
+      );
+    }
+
+    return BookModel.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
+  }
+
+  Future<void> deletarLivro(int livroId) async {
+    final response = await http.delete(
+      Uri.parse(ApiConstants.livro(livroId)),
+      headers: await _headers(),
+    );
+
+    if (response.statusCode != 204) {
+      throw LivroException(
+        _messageFrom(response.body) ?? 'Não foi possível excluir o livro.',
       );
     }
   }
