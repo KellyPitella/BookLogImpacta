@@ -16,12 +16,17 @@ class AuthService {
   static const _tokenKey = 'auth_token';
   static const _userKey = 'auth_user';
 
+  final http.Client? _client;
+
+  AuthService({http.Client? client}) : _client = client;
+
   Future<AuthResponseModel> login(String email, String senha) async {
-    final response = await http.post(
-      Uri.parse(ApiConstants.login),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'senha': senha}),
-    );
+    final uri = Uri.parse(ApiConstants.login);
+    final headers = {'Content-Type': 'application/json'};
+    final body = jsonEncode({'email': email, 'senha': senha});
+    final response = _client == null
+        ? await http.post(uri, headers: headers, body: body)
+        : await _client.post(uri, headers: headers, body: body);
 
     if (response.statusCode == 200) {
       final auth = AuthResponseModel.fromJson(
@@ -31,12 +36,25 @@ class AuthService {
       return auth;
     }
 
-    final message = _extractMessage(response.body) ??
-        'Email ou senha inválidos';
+    if (response.statusCode >= 500) {
+      throw AuthException(
+        'Erro no servidor. Verifique se o servidor e o banco de dados estão funcionando.',
+      );
+    }
+
+    final message =
+        _extractMessage(response.body) ??
+        (response.statusCode == 401
+            ? 'Email ou senha inválidos'
+            : 'Não foi possível entrar. Tente novamente.');
     throw AuthException(message);
   }
 
-  Future<AuthResponseModel> register(String nome, String email, String senha) async {
+  Future<AuthResponseModel> register(
+    String nome,
+    String email,
+    String senha,
+  ) async {
     final response = await http.post(
       Uri.parse(ApiConstants.register),
       headers: {'Content-Type': 'application/json'},
@@ -51,8 +69,8 @@ class AuthService {
       return auth;
     }
 
-    final message = _extractMessage(response.body) ??
-        'Não foi possível criar a conta';
+    final message =
+        _extractMessage(response.body) ?? 'Não foi possível criar a conta';
     throw AuthException(message);
   }
 
