@@ -62,6 +62,96 @@ class ReadingSummary {
   }
 }
 
+class MonthlyReadingStatistics {
+  final int mes;
+  final int livrosConcluidos;
+  final int paginasLidas;
+
+  const MonthlyReadingStatistics({
+    required this.mes,
+    required this.livrosConcluidos,
+    required this.paginasLidas,
+  });
+
+  factory MonthlyReadingStatistics.fromJson(Map<String, dynamic> json) {
+    return MonthlyReadingStatistics(
+      mes: json['mes'] as int,
+      livrosConcluidos: json['livrosConcluidos'] as int,
+      paginasLidas: (json['paginasLidas'] as num).toInt(),
+    );
+  }
+}
+
+class ReadingActivityDay {
+  final DateTime data;
+  final int paginasLidas;
+
+  const ReadingActivityDay({required this.data, required this.paginasLidas});
+
+  factory ReadingActivityDay.fromJson(Map<String, dynamic> json) {
+    return ReadingActivityDay(
+      data: DateTime.parse(json['data'] as String),
+      paginasLidas: (json['paginasLidas'] as num).toInt(),
+    );
+  }
+}
+
+class ReadingStatistics {
+  final int ano;
+  final int livrosConcluidos;
+  final int paginasLidas;
+  final double mediaDiaria;
+  final double mediaPorLivro;
+  final int diasDeLeitura;
+  final int maiorSequencia;
+  final int livrosConcluidosSemData;
+  final List<int> anosDisponiveis;
+  final List<MonthlyReadingStatistics> meses;
+  final List<ReadingActivityDay> atividade;
+
+  const ReadingStatistics({
+    required this.ano,
+    required this.livrosConcluidos,
+    required this.paginasLidas,
+    required this.mediaDiaria,
+    required this.mediaPorLivro,
+    required this.diasDeLeitura,
+    required this.maiorSequencia,
+    required this.livrosConcluidosSemData,
+    required this.anosDisponiveis,
+    required this.meses,
+    required this.atividade,
+  });
+
+  factory ReadingStatistics.fromJson(Map<String, dynamic> json) {
+    return ReadingStatistics(
+      ano: json['ano'] as int,
+      livrosConcluidos: json['livrosConcluidos'] as int,
+      paginasLidas: (json['paginasLidas'] as num).toInt(),
+      mediaDiaria: (json['mediaDiaria'] as num).toDouble(),
+      mediaPorLivro: (json['mediaPorLivro'] as num).toDouble(),
+      diasDeLeitura: json['diasDeLeitura'] as int,
+      maiorSequencia: json['maiorSequencia'] as int,
+      livrosConcluidosSemData: json['livrosConcluidosSemData'] as int,
+      anosDisponiveis: (json['anosDisponiveis'] as List<dynamic>)
+          .map((year) => year as int)
+          .toList(),
+      meses: (json['meses'] as List<dynamic>)
+          .map(
+            (month) => MonthlyReadingStatistics.fromJson(
+              month as Map<String, dynamic>,
+            ),
+          )
+          .toList(),
+      atividade: (json['atividade'] as List<dynamic>)
+          .map(
+            (day) => ReadingActivityDay.fromJson(day as Map<String, dynamic>),
+          )
+          .toList(),
+    );
+  }
+}
+
 class ProgressException implements Exception {
   final String message;
   ProgressException(this.message);
@@ -161,6 +251,27 @@ class ProgressService {
 
     throw ProgressException(
       _extractMessage(response.body) ?? 'Erro ao carregar resumo',
+    );
+  }
+
+  Future<ReadingStatistics> getEstatisticas(int ano) async {
+    final response = await http.get(
+      Uri.parse(ApiConstants.estatisticasLeitura(ano)),
+      headers: await _getHeaders(),
+    );
+
+    if (response.statusCode == 200) {
+      return ReadingStatistics.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>,
+      );
+    }
+
+    if (response.statusCode == 401) {
+      throw ProgressException('Sessão expirada. Faça login novamente.');
+    }
+
+    throw ProgressException(
+      _extractMessage(response.body) ?? 'Erro ao carregar estatísticas',
     );
   }
 }

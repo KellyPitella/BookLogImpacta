@@ -55,4 +55,19 @@ public class ProgressoController : ControllerBase
     {
         return Ok(await _progressoService.GetResumo(GetUsuarioId()));
     }
+
+    [HttpGet("estatisticas")]
+    public async Task<ActionResult<EstatisticasLeituraDto>> GetEstatisticas(
+        [FromQuery] int? ano)
+    {
+        var anoSelecionado = ano ?? DateTime.UtcNow.Year;
+        if (anoSelecionado < 1 || anoSelecionado > 9998)
+        {
+            return BadRequest(new { message = "Ano inválido." });
+        }
+
+        return Ok(await _progressoService.GetEstatisticas(
+            anoSelecionado,
+            GetUsuarioId()));
+    }
 }

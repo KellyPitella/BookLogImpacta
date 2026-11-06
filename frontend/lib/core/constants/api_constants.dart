@@ -18,4 +18,6 @@ class ApiConstants {
   static String progressosPorLivro(int livroId) =>
       '$baseUrl/Progresso/livro/$livroId';
   static String get resumo => '$baseUrl/Progresso/resumo';
+  static String estatisticasLeitura(int ano) =>
+      '$baseUrl/Progresso/estatisticas?ano=$ano';
 }

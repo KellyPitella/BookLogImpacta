@@ -36,3 +36,31 @@ public class ResumoLeituraDto
     public int LivrosEmAndamento { get; set; }
     public List<ProgressoLeituraDto> UltimosRegistros { get; set; } = new();
 }
+
+public class EstatisticasLeituraDto
+{
+    public int Ano { get; set; }
+    public int LivrosConcluidos { get; set; }
+    public long PaginasLidas { get; set; }
+    public double MediaDiaria { get; set; }
+    public double MediaPorLivro { get; set; }
+    public int DiasDeLeitura { get; set; }
+    public int MaiorSequencia { get; set; }
+    public int LivrosConcluidosSemData { get; set; }
+    public List<int> AnosDisponiveis { get; set; } = new();
+    public List<EstatisticaMensalDto> Meses { get; set; } = new();
+    public List<AtividadeLeituraDto> Atividade { get; set; } = new();
+}
+
+public class EstatisticaMensalDto
+{
+    public int Mes { get; set; }
+    public int LivrosConcluidos { get; set; }
+    public long PaginasLidas { get; set; }
+}
+
+public class AtividadeLeituraDto
+{
+    public DateOnly Data { get; set; }
+    public long PaginasLidas { get; set; }
+}
