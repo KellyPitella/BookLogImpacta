@@ -1,8 +1,8 @@
 # 📚 BookLog
 
-Aplicativo para **rastreamento, organização e acompanhamento do hábito de leitura**, permitindo que o usuário crie sua conta, cadastre livros na própria estante e acompanhe o progresso de leitura de cada livro.
+Aplicativo para **rastreamento, organização e acompanhamento do hábito de leitura**, permitindo que o usuário crie sua conta, cadastre livros na própria estante, gerencie suas listas de leitura e acompanhe detalhadamente o progresso e as métricas de cada obra.
 
-O projeto foi desenvolvido como uma aplicação **Full Stack**, composta por uma API REST em C#/.NET, uma aplicação FrontEnd em Flutter e um banco de dados MySQL.
+O projeto foi desenvolvido como uma aplicação **Full Stack**, composta por uma API REST robusta em C#/.NET 10, uma aplicação FrontEnd moderna em Flutter (Material 3) e um banco de dados relacional MySQL.
 
 ---
 
@@ -10,11 +10,13 @@ O projeto foi desenvolvido como uma aplicação **Full Stack**, composta por uma
 
 | Informação | Descrição |
 | :--- | :--- |
+| **Instituição** | Faculdade Impacta de Tecnologia |
+| **Curso** | Engenharia de Software / Análise e Desenvolvimento de Sistemas |
 | **Autora** | Kelly Pitella |
 | **Aplicação** | BookLogImpacta |
-| **Tipo** | Aplicação Full Stack |
-| **Escopo atual** | Entrega 2 |
-| **Funcionalidades ativas** | Cadastro e login de usuários, estante de livros, adição de livros e registro de progresso de leitura |
+| **Tipo** | Aplicação Full Stack (API REST + Mobile/Web + Banco Relacional) |
+| **Escopo atual** | **Entrega Final (Concluída)** ✅ |
+| **Funcionalidades ativas** | Autenticação JWT/BCrypt, CRUD completo de livros, persistência de categorias (`QueroLer`, `Lendo`, `Lido`), persistência de `Favoritos` no MySQL, registro de histórico de sessões de leitura com exclusão em cascata, dashboard de estatísticas anuais e streaks. |
 
 ---
 
@@ -24,55 +26,57 @@ O projeto foi desenvolvido como uma aplicação **Full Stack**, composta por uma
 
 - **C#**
 - **ASP.NET Core (.NET 10)**
-- **Entity Framework Core**
+- **Entity Framework Core (EF Core)**
 - **Pomelo.EntityFrameworkCore.MySql**
-- **JWT Bearer Authentication**
-- **BCrypt.Net** para geração de hash seguro das senhas
-- **Swagger / OpenAPI** para documentação e testes da API
+- **JWT (JSON Web Token) Bearer Authentication**
+- **BCrypt.Net** para geração de hash criptográfico seguro de senhas
+- **Injeção de Dependência nativa**
+- **Swagger / OpenAPI** para documentação interativa e testes da API
 
 ### FrontEnd
 
-- **Flutter**
+- **Flutter 3.x**
 - **Dart**
-- Suporte para **Web** e **Android**
-- **Material 3**
-- Tema **Claro e Escuro**
-- **SharedPreferences** para persistência local do token de autenticação
-- Requisições **HTTP** para comunicação com a API REST
+- Suporte multiplataforma para **Android** e **Web**
+- **Material 3** com paleta de cores personalizada
+- Suporte a **Tema Claro (Light)** e **Tema Escuro (Dark)** dinâmicos
+- **SharedPreferences** para persistência do token de sessão e preferências locais
+- **HTTP Client** para integração com a API REST
 
 ### Banco de Dados
 
-- **MySQL**
+- **MySQL Server (v8.0+)**
 - Schema: `booklogImpacta`
-- Gerenciamento via **MySQL Workbench**
+- Script de inicialização e migrações incrementais: `create_database_mysql.sql`
+- Gerenciamento visual via **MySQL Workbench**
 
 ---
 
 # 🗃️ Modelagem do Banco de Dados
 
-O banco de dados `booklogImpacta` possui três tabelas principais:
+O banco de dados relacional `booklogImpacta` é estruturado em três tabelas centrais com integridade referencial estrita e regras de **Cascade Delete**:
 
 - `Usuarios`
 - `Livros`
 - `ProgressosLeitura`
 
-As tabelas possuem relacionamentos com **Cascade Delete**, garantindo que, ao excluir um usuário, seus livros associados sejam removidos; e ao excluir um livro, todos os seus registros de progresso vinculados também sejam excluídos.
-
 ### Tabela `Usuarios`
+
+Armazena as contas dos leitores da aplicação.
 
 | Campo | Tipo | Descrição |
 | :--- | :--- | :--- |
 | `Id` | INT (PK) | Identificador único do usuário (Auto Increment) |
-| `Nome` | VARCHAR(100) | Nome do usuário |
-| `Email` | VARCHAR(255) | E-mail utilizado para autenticação |
-| `SenhaHash` | LONGTEXT | Hash da senha gerado utilizando BCrypt |
-| `DataCriacao` | DATETIME(6) | Data e hora de criação da conta |
-
-O campo `Email` possui restrição de **unicidade** (`UNIQUE INDEX`), impedindo o cadastro de mais de uma conta com o mesmo endereço de e-mail.
+| `Nome` | VARCHAR(100) | Nome completo do usuário |
+| `Email` | VARCHAR(255) | E-mail único utilizado para autenticação (`UNIQUE INDEX`) |
+| `SenhaHash` | LONGTEXT | Hash seguro da senha gerado via algoritmo BCrypt |
+| `DataCriacao` | DATETIME(6) | Data e hora de criação da conta (UTC) |
 
 ---
 
 ### Tabela `Livros`
+
+Representa o catálogo de livros pertencentes a cada usuário, armazenando tanto os metadados quanto o status e a preferência de favorito diretamente no banco.
 
 | Campo | Tipo | Descrição |
 | :--- | :--- | :--- |
@@ -82,257 +86,181 @@ O campo `Email` possui restrição de **unicidade** (`UNIQUE INDEX`), impedindo 
 | `Genero` | VARCHAR(100) | Gênero literário (opcional) |
 | `TotalPaginas` | INT | Número total de páginas do livro |
 | `PaginasLidas` | INT | Quantidade total de páginas já lidas (Padrão: 0) |
-| `Concluido` | TINYINT(1) | Indica se a leitura da obra foi finalizada (Padrão: 0) |
-| `Favorito` | TINYINT(1) | Indica se o livro é favorito (padrão: 0) |
-| `Status` | VARCHAR(20) | `QueroLer`, `Lendo` ou `Lido` (padrão: `QueroLer`) |
-| `DataCadastro` | DATETIME(6) | Data e hora de cadastro do livro |
-| `UsuarioId` | INT (FK) | Referência ao usuário proprietário (`ON DELETE CASCADE`) |
+| `Concluido` | TINYINT(1) | Flag booleana que indica conclusão da obra (Padrão: 0) |
+| `Favorito` | TINYINT(1) | Indica se a obra está marcada como favorita (Padrão: 0) |
+| `Status` | VARCHAR(20) | Estado atual da leitura: `QueroLer`, `Lendo` ou `Lido` (Padrão: `QueroLer`) |
+| `DataCadastro` | DATETIME(6) | Data e hora de inclusão da obra na estante |
+| `UsuarioId` | INT (FK) | Chave estrangeira referenciando `Usuarios(Id)` (`ON DELETE CASCADE`) |
 
 ---
 
 ### Tabela `ProgressosLeitura`
+
+Armazena cada sessão de leitura individual realizada pelo usuário, permitindo rastrear o histórico e calcular métricas de desempenho.
 
 | Campo | Tipo | Descrição |
 | :--- | :--- | :--- |
 | `Id` | INT (PK) | Identificador único do registro (Auto Increment) |
 | `Data` | DATETIME(6) | Data e hora da sessão de leitura |
 | `PaginasLidas` | INT | Quantidade de páginas lidas na sessão |
-| `Nota` | VARCHAR(500) | Anotação ou observação opcional sobre a leitura |
-| `LivroId` | INT (FK) | Referência ao livro lido (`ON DELETE CASCADE`) |
+| `Nota` | VARCHAR(500) | Anotação ou reflexão opcional sobre o trecho lido |
+| `LivroId` | INT (FK) | Chave estrangeira referenciando `Livros(Id)` (`ON DELETE CASCADE`) |
 
 ---
 
-### Relacionamento
+### Relacionamentos e Integridade Referencial
 
 ```text
 Usuarios
    │
    1
    │
-   N
+   N (ON DELETE CASCADE)
    ▼
  Livros
    │
    1
    │
-   N
+   N (ON DELETE CASCADE)
    ▼
 ProgressosLeitura
 ```
 
-**Relacionamentos:**
-
-- `Usuarios (1) — (N) Livros`
-- `Livros (1) — (N) ProgressosLeitura`
-
-A chave estrangeira `UsuarioId` identifica o proprietário de cada livro e garante que cada usuário visualize apenas os livros associados à sua própria conta. A chave `LivroId` vincula cada registro de progresso à sua respectiva obra.
+- **`Usuarios (1) — (N) Livros`**: Cada livro pertence obrigatoriamente a um único usuário logado. Ao excluir um usuário, todas as suas obras cadastradas são eliminadas do banco automaticamente.
+- **`Livros (1) — (N) ProgressosLeitura`**: Cada registro de progresso está atrelado a uma obra. Ao excluir um livro da estante, todo o seu histórico de sessões vinculadas é removido imediatamente em cascata.
 
 ---
 
-# 🔐 Autenticação
+# 🔐 Autenticação e Segurança
 
-A autenticação da aplicação é realizada utilizando **JWT (JSON Web Token)**.
+A autenticação é baseada no padrão da indústria **JWT (JSON Web Token)**:
 
-O fluxo de autenticação funciona da seguinte forma:
-
-1. O usuário cria uma conta através da tela de cadastro.
-2. A senha é transformada em um hash utilizando **BCrypt** antes de ser armazenada.
-3. O usuário realiza o login utilizando e-mail e senha.
-4. A API valida as credenciais.
-5. Em caso de sucesso, um token JWT é gerado.
-6. O FrontEnd armazena o token localmente utilizando **SharedPreferences**.
-7. O token é enviado nas requisições que necessitam de autenticação.
-8. A API identifica o usuário através das informações presentes no token.
+1. **Registro:** A senha informada no cadastro é transformada em hash utilizando **BCrypt** com salt seguro antes de ser salva no banco.
+2. **Login:** A API valida o e-mail e a senha contra o hash armazenado.
+3. **Emissão de Token:** Em caso de sucesso, é gerado um token JWT assinado digitalmente, contendo o `NameIdentifier` (ID do usuário) e expiração configurada.
+4. **Armazenamento:** O aplicativo Flutter armazena o token de forma persistente utilizando o `shared_preferences`.
+5. **Autorização:** Todas as requisições para rotas protegidas enviam o cabeçalho:
+   ```http
+   Authorization: Bearer <SEU_TOKEN_JWT>
+   ```
+6. **Isolamento de Dados:** Os controllers extraem o ID do usuário diretamente das claims do token, impedindo que um usuário acesse ou modifique livros de outra conta.
 
 ---
 
 # 🔌 Endpoints da API REST
 
-## Autenticação – `/api/Auth`
+A API possui documentação interativa completa via **Swagger UI** (`/swagger`).
+
+## 1. Autenticação – `/api/Auth`
 
 | Método | Rota | Autenticação | Descrição |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/Auth/register` | Não | Cria uma nova conta de usuário (nome, email, senha) |
-| `POST` | `/api/Auth/login` | Não | Autentica o usuário (email, senha) e retorna um token JWT |
+| `POST` | `/api/Auth/register` | Pública | Cria uma nova conta de usuário (`RegisterDto`) |
+| `POST` | `/api/Auth/login` | Pública | Autentica o usuário (`LoginDto`) e retorna o Token JWT |
 
-### Schemas de Requisição (Auth)
-
-**`RegisterDto`**
-
-- `nome` (string, obrigatório, máx: 100 caracteres)
-- `email` (string, formato email, obrigatório, máx: 255 caracteres)
-- `senha` (string, obrigatório, mín: 6 caracteres)
-
-**`LoginDto`**
-
-- `email` (string, formato email, obrigatório)
-- `senha` (string, obrigatório)
-
----
-
-## Livros – `/api/Livros`
+## 2. Livros – `/api/Livros`
 
 | Método | Rota | Autenticação | Descrição |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/api/Livros` | Bearer Token | Lista os livros da estante do usuário autenticado |
-| `POST` | `/api/Livros` | Bearer Token | Adiciona um novo livro à estante do usuário autenticado |
+| `GET` | `/api/Livros` | Bearer JWT | Lista os livros da estante com suporte a filtros |
+| `POST` | `/api/Livros` | Bearer JWT | Cadastra um novo livro na estante (`CreateLivroDto`) |
+| `PUT` | `/api/Livros/{id}` | Bearer JWT | Atualiza os dados cadastrais do livro (`UpdateLivroDto`) |
+| `DELETE` | `/api/Livros/{id}` | Bearer JWT | Exclui o livro e seus históricos (Cascade Delete) |
+| `PATCH` | `/api/Livros/{id}/favorito` | Bearer JWT | Alterna atomicamente o estado de favorito do livro |
+| `PATCH` | `/api/Livros/{id}/status` | Bearer JWT | Altera o status (`QueroLer`, `Lendo`, `Lido`) e sincroniza a conclusão |
 
-### Schema de Requisição (Livros)
+### Parâmetros de Filtro no `GET /api/Livros`:
+- `status`: Aceita `QueroLer`, `Lendo` ou `Lido`.
+- `favoritos`: `true` filtra exclusivamente obras favoritadas; `false` ou omitido retorna todas.
+- Podem ser combinados livremente: ex: `GET /api/Livros?status=Lido&favoritos=true`.
 
-Além da listagem e do cadastro, a API oferece:
+### Regras de Transição de Status (`PATCH /api/Livros/{id}/status`):
+- **`Lido`**: Define `Concluido = true` e atualiza `PaginasLidas = TotalPaginas` (100% de progresso).
+- **`QueroLer`**: Desmarca a conclusão (`Concluido = false`).
+- **`Lendo`**: Desmarca a conclusão (`Concluido = false`), mantendo o histórico de páginas.
+- **Registro de Progresso**: Sempre que uma sessão de leitura é registrada, a API recalcula automaticamente o percentual e atualiza o status para `Lendo` ou `Lido`.
 
-- `PUT /api/Livros/{id}` para atualizar um livro e `DELETE /api/Livros/{id}` para excluí-lo.
-- `PATCH /api/Livros/{id}/favorito` para alternar o favorito e retornar o livro atualizado.
-- `PATCH /api/Livros/{id}/status` para alterar o status e retornar o livro atualizado.
-
-O `GET /api/Livros` aceita os filtros opcionais `status` e `favoritos=true`;
-`favoritos=false` ou a ausência do filtro retorna favoritos e não favoritos.
-Os filtros podem ser combinados. Status inválidos resultam em `400`; livros
-inexistentes ou de outro usuário resultam em `404` nas operações individuais.
-
-O corpo de `PATCH /api/Livros/{id}/status` é, por exemplo, `{"status":"Lido"}`.
-Os valores aceitos são exatamente `QueroLer`, `Lendo` e `Lido`. Marcar como
-`Lido` define `concluido` como verdadeiro e `paginasLidas` como `totalPaginas`.
-Marcar como `QueroLer` ou `Lendo` desmarca `concluido`, mas preserva as páginas e
-o histórico existentes. Ao registrar progresso, o status volta a ser calculado
-automaticamente. Uma conclusão manual não cria um registro de progresso nem
-uma data de conclusão.
-
-**`CreateLivroDto`**
-
-- `titulo` (string, obrigatório, máx: 300 caracteres)
-- `totalPaginas` (integer, obrigatório, mín: 1)
-- `autor` (string, opcional, máx: 200 caracteres)
-- `genero` (string, opcional, máx: 100 caracteres)
-- `status` (string, opcional; padrão: `QueroLer`)
-- `favorito` (boolean, opcional; padrão: `false`)
-
-`UpdateLivroDto` também aceita `status` e `favorito` opcionais. Após atualizar
-o código, execute o script [create_database_mysql.sql](BackEnd/scripts/create_database_mysql.sql)
-no banco configurado antes de iniciar a nova versão da API. Ele acrescenta as
-colunas ausentes e inicializa o status de livros existentes a partir da conclusão
-e das páginas lidas, sem sobrescrever status já cadastrados.
-
-O frontend usa os favoritos e status do backend. Os favoritos que foram salvos
-anteriormente apenas no dispositivo não são migrados automaticamente.
-
----
-
-## Progresso de Leitura – `/api/Progresso`
+## 3. Progresso e Estatísticas – `/api/Progresso`
 
 | Método | Rota | Autenticação | Descrição |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/Progresso` | Bearer Token | Registra uma nova sessão de leitura e atualiza o progresso do livro |
-
-### Schema de Requisição (Progresso)
-
-**`CreateProgressoDto`**
-
-- `livroId` (integer, obrigatório)
-- `paginasLidas` (integer, obrigatório, mín: 1)
-- `data` (datetime ISO 8601, obrigatório, ex: `2026-10-12T19:30:00Z`)
-- `nota` (string, opcional, máx: 500 caracteres)
+| `POST` | `/api/Progresso` | Bearer JWT | Registra uma nova sessão de leitura (`CreateProgressoDto`) |
+| `GET` | `/api/Progresso/livro/{livroId}` | Bearer JWT | Lista o histórico cronológico de sessões da obra |
+| `GET` | `/api/Progresso/estatisticas` | Bearer JWT | Retorna métricas anuais: livros concluídos, páginas, médias e streaks |
 
 ---
 
-# 🔒 Autorização
+# 📱 FrontEnd (Flutter)
 
-Os endpoints protegidos utilizam autenticação **Bearer Token**.
+A interface foi desenvolvida seguindo as diretrizes do **Material 3**, com design limpo, tipografia expressiva e alta responsividade.
 
-Exemplo do cabeçalho utilizado nas requisições:
+## Telas e Módulos Implementados
 
-```http
-Authorization: Bearer SEU_TOKEN_JWT
-```
+### 🔑 Autenticação (Login e Cadastro)
+- Validação dinâmica de formulários de e-mail e senha;
+- Feedback visual de carregamento e mensagens amigáveis em caso de credenciais inválidas;
+- Armazenamento automático do token de sessão.
 
-A API utiliza o identificador presente no token para garantir que o usuário acesse somente os seus próprios livros e registros.
+### 📚 Estante Geral (`HomeScreen`)
+- Apresentação dos livros em grid elegante de 2 colunas;
+- **Cards com proporções harmoniosas**:
+  - Botão de favoritar compacto com ícone de coração (`Icons.favorite` / `Icons.favorite_border`) que persiste no MySQL em tempo real;
+  - Menu de opções de 3 pontinhos (`Icons.more_vert`) para edição ou exclusão;
+  - Barra de progresso percentual dinâmica;
+- **Chips de filtro dinâmicos** no topo, com contadores atualizados:
+  - `Lendo ({qtd})`
+  - `Lidos ({qtd})`
+  - `Quero Ler ({qtd})`
+  - `Favoritos ({qtd})`
+- Barra de navegação inferior com transições suaves para **Início**, **Novo Livro** e **Estatísticas**.
 
----
+### 📖 Detalhes do Livro e Registro de Progresso (`BookDetailsScreen`)
+- Metadados completos da obra (Título, Autor, Gênero, Data de Início);
+- Badge visual do status atual (`Lendo`, `Lido`, `Quero Ler`);
+- Botão de alternância de favorito;
+- Formulário modal para registro de novas páginas lidas e notas;
+- Histórico em linha do tempo com data, páginas lidas na sessão e anotações.
 
-# 📱 FrontEnd
+### ➕ Gerenciamento de Livros (`AddBookScreen`)
+- Criação e edição de obras;
+- Validação impedindo que o total de páginas seja menor do que as páginas já lidas;
+- Modal de confirmação antes da exclusão permanente.
 
-O aplicativo possui uma interface desenvolvida em **Flutter**, utilizando **Material 3** e suporte para temas claro e escuro.
+### 📊 Dashboard de Estatísticas (`StatisticsScreen`)
+- Seletor de ano civil;
+- Total de livros finalizados e total de páginas lidas;
+- Média diária de páginas;
+- **Maior sequência de dias de leitura (Streak)** e sequência atual;
+- Gráficos de barras mensais de páginas e conclusões.
 
-## Telas e funcionalidades
-
-### 🔑 Tela de Login
-
-Permite que o usuário:
-
-- Informe e-mail e senha;
-- Realize a autenticação;
-- Receba o token JWT;
-- Acesse a estante após o login.
-
-### 📝 Tela de Cadastro
-
-Permite criar uma nova conta informando:
-
-- Nome;
-- E-mail;
-- Senha.
-
-### 📚 Tela de Estante
-
-Apresenta os livros cadastrados pelo usuário autenticado.
-
-Cada livro apresenta informações como:
-
-- Título;
-- Autor;
-- Progresso de leitura.
-
-### ➕ Tela de Adicionar Livro
-
-Permite cadastrar um novo livro informando:
-
-- Título;
-- Autor;
-- Gênero literário;
-- Número total de páginas.
-
-### 📖 Tela de Detalhes do Livro e Registro de Progresso
-
-Apresenta as informações cadastradas da obra e o percentual de leitura:
-
-- Exibe indicador visual e percentual atualizado da leitura;
-- Ação `+ Registrar Progresso` para inserção de novas páginas lidas;
-- Histórico das sessões de leitura.
-
-O percentual é calculado com base na quantidade de páginas lidas em relação ao total de páginas:
-
-```text
-Progresso (%) = (Páginas Lidas ÷ Total de Páginas) × 100
-```
-
----
-
-## 🌓 Tema Claro e Escuro
-
-A aplicação possui suporte aos modos:
-
-- ☀️ **Tema Claro**
-- 🌙 **Tema Escuro**
-
-A interface utiliza os componentes do **Material 3** para manter uma experiência visual consistente.
+### 🌓 Suporte a Tema Claro e Escuro
+- Alternância em tempo real entre **Modo Claro** e **Modo Escuro** via `ThemeController`, com persistência das preferências do usuário.
 
 ---
 
 # 📋 Metodologia de Gestão Ágil
 
-O gerenciamento do projeto é realizado através do **GitHub Projects**, utilizando a metodologia **Kanban**.
+O projeto foi gerenciado utilizando a metodologia **Kanban** através do **GitHub Projects**:
+[Quadro Kanban do Projeto](https://github.com/users/KellyPitella/projects/2/views/1)
 
-O quadro está organizado nas seguintes etapas:
+- **Backlog:** Levantamento de histórias de usuário e requisitos.
+- **Ready:** Tarefas priorizadas para a sprint.
+- **In Progress:** Tarefas ativas em desenvolvimento.
+- **In Review:** Revisão de código, testes de API e validação de interfaces.
+- **Done:** Funcionalidades testadas e entregues.
 
-| Coluna | Descrição |
-| :--- | :--- |
-| **Backlog** | Funcionalidades e tarefas planejadas para o projeto |
-| **Ready** | Tarefas priorizadas e prontas para desenvolvimento |
-| **In Progress** | Tarefas atualmente em desenvolvimento |
-| **In Review** | Funcionalidades em processo de revisão e validação |
-| **Done** | Tarefas concluídas e validadas |
+---
 
-Essa organização permite acompanhar o desenvolvimento das funcionalidades e visualizar o progresso de cada etapa do projeto.
+# 📄 Documentação Técnica e Diagramas UML
+
+A especificação arquitetural completa do projeto foi compilada em formato PDF oficial:
+
+* 📄 **Documento Completo:** `Documentacao_UML_BookLog.pdf` (localizado na raiz do projeto)
+* **Conteúdo:**
+  - **Diagrama de Casos de Uso (UML 2.5):** 14 casos de uso com fluxos de inclusão e extensão.
+  - **Tabela de Especificação de Casos de Uso:** Mapeamento de regras e pré-condições.
+  - **Diagrama de Classes (UML 2.5):** Entidades de banco, DTOs, Serviços e Modelos Mobile com cardinalidades.
+  - **Regras de Negócio e Persistência:** Detalhamento da integridade relacional e transições de estado.
 
 ---
 
@@ -340,266 +268,113 @@ Essa organização permite acompanhar o desenvolvimento das funcionalidades e vi
 
 ## 📌 Pré-requisitos
 
-Antes de executar o projeto, certifique-se de ter instalado:
-
 - **.NET SDK 10**
-- **MySQL Server** (v8.0 ou superior)
-- **MySQL Workbench** (opcional, para gerenciamento visual)
-- **Flutter SDK**
-- **Google Chrome** para execução Web
-- **Android Studio** e/ou um dispositivo Android para execução mobile
-
-Também é recomendado possuir:
-
-- **Visual Studio** ou **Visual Studio Code**
-- **Git**
-- Extensões de **Flutter/Dart** e **C#** para o editor utilizado
+- **MySQL Server (v8.0+)** e **MySQL Workbench**
+- **Flutter SDK (v3.10+)**
+- **Google Chrome** (para Web) ou **Android Studio / Emulador** (para Mobile)
+- **Visual Studio Code** ou **Visual Studio**
 
 ---
 
-## 🗄️ 1. Configuração do Banco de Dados
+## 🗄️ 1. Banco de Dados
 
-Certifique-se de que o serviço do MySQL esteja em execução.
-
-Neste projeto, o banco de dados e suas tabelas podem ser criados através do script:
-
-```text
-create_database_mysql.sql (localizado em BackEnd/scripts/ ou raiz de BackEnd/)
-```
-
-Execute esse script no **MySQL Workbench** para criar o banco de dados `booklogImpacta` e suas respectivas tabelas.
-
-> ⚠️ **Atenção:** Não é necessário executar o script e as migrations para criar a mesma estrutura. Para o estado atual do projeto, o script SQL é a forma mais direta.
-
-Depois, configure a string de conexão no arquivo:
-
-```text
-BackEnd/appsettings.json
-```
-
-Exemplo:
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "server=localhost;database=booklogImpacta;user=SEU_USUARIO;password=SUA_SENHA"
-  }
-}
-```
+1. Abra o **MySQL Workbench** e conecte-se ao seu servidor local.
+2. Abra o arquivo `BackEnd/scripts/create_database_mysql.sql`.
+3. Execute o script completo (ícone do Raio ⚡). Ele criará o banco `booklogImpacta`, as tabelas com chaves estrangeiras e as migrações necessárias.
+4. Configure a string de conexão no arquivo `BackEnd/appsettings.json`:
+   ```json
+   {
+     "ConnectionStrings": {
+       "DefaultConnection": "server=localhost;database=booklogImpacta;user=SEU_USUARIO;password=SUA_SENHA"
+     }
+   }
+   ```
 
 ---
 
 ## ⚙️ 2. Executar o BackEnd
 
-Abra um terminal e acesse a pasta do BackEnd:
-
+Acesse a pasta do BackEnd:
 ```bash
 cd BackEnd
 ```
 
-Restaure as dependências:
-
+Restaure e execute a API:
 ```bash
 dotnet restore
-```
-
-Execute a aplicação:
-
-```bash
 dotnet run
 ```
 
-Por padrão, nesta configuração do projeto, a API estará disponível em:
-
+A API estará rodando por padrão em:
 ```text
 http://localhost:5191
+Swagger: http://localhost:5191/swagger
 ```
-
-### Swagger
-
-A documentação interativa da API pode ser acessada através do Swagger:
-
-```text
-http://localhost:5191/swagger
-```
-
-O Swagger permite visualizar os endpoints disponíveis e realizar testes diretamente pelo navegador.
-
-> ⚠️ A porta pode ser diferente dependendo da configuração do ambiente. Caso isso aconteça, utilize a URL apresentada no terminal após executar `dotnet run`.
 
 ---
 
 ## 📱 3. Executar o FrontEnd
 
 Abra outro terminal e acesse a pasta do FrontEnd:
-
 ```bash
 cd frontend
-```
-
-Instale as dependências:
-
-```bash
 flutter pub get
 ```
 
-Antes de executar o aplicativo, certifique-se de que a URL base da API configurada no FrontEnd aponta para o endereço correto do BackEnd (em `api_constants.dart`).
+Execute na plataforma desejada:
 
-Exemplo:
-
-```text
-http://localhost:5191
-```
-
-### 🌐 Executar na Web
-
-Para executar o aplicativo utilizando o Google Chrome:
-
-```bash
-flutter run -d chrome
-```
-
-### 🤖 Executar no Android
-
-Para executar em um dispositivo ou emulador Android:
-
-```bash
-flutter run -d android
-```
-
-### ⚠️ Importante sobre localhost no Android
-
-Quando o aplicativo é executado em um emulador Android, `localhost` representa o próprio emulador e não o computador onde a API está sendo executada.
-
-Nesse caso, para o emulador Android padrão do Android Studio, utilize:
-
-```text
-http://10.0.2.2:5191
-```
-
-Em um dispositivo físico, utilize o endereço IP local da máquina que está executando o BackEnd, desde que ambos estejam conectados à mesma rede Wi-Fi.
+* **Na Web (Google Chrome):**
+  ```bash
+  flutter run -d chrome
+  ```
+* **No Emulador Android:**
+  ```bash
+  flutter run -d android
+  ```
+  *(O emulador utiliza automaticamente o endereço `http://10.0.2.2:5191` para se comunicar com o BackEnd local)*.
 
 ---
 
-# 📁 Estrutura do Projeto
-
-O projeto está organizado separando o BackEnd e o FrontEnd:
-
-```text
-BookLogImpacta/
-│
-├── BackEnd/
-│   ├── Controllers/
-│   ├── Data/
-│   ├── DTOs/
-│   ├── Models/
-│   ├── Properties/
-│   ├── scripts/
-│   ├── Services/
-│   ├── appsettings.Development.json
-│   ├── appsettings.json
-│   ├── BackEnd.csproj
-│   ├── BackEnd.http
-│   └── Program.cs
-│
-├── frontend/
-│   ├── android/
-│   ├── assets/
-│   ├── lib/
-│   │   ├── core/
-│   │   ├── models/
-│   │   ├── screens/
-│   │   ├── services/
-│   │   └── main.dart
-│   ├── test/
-│   ├── web/
-│   ├── analysis_options.yaml
-│   ├── pubspec.yaml
-│   └── README.md
-│
-└── .gitignore
-```
-
----
-
-# 🗺️ Roadmap
-
-O projeto será desenvolvido de forma incremental, adicionando novas funcionalidades ao longo das próximas entregas.
+# 🗺️ Histórico de Entregas e Roadmap
 
 ## 🚀 Entrega 1 (Concluída)
-
-- [x] Cadastro e login de usuários;
-- [x] Autenticação com JWT e BCrypt;
+- [x] Cadastro e autenticação de usuários com JWT e BCrypt;
 - [x] Modelagem inicial do banco de dados (`Usuarios` e `Livros`);
-- [x] Endpoints iniciais da API e documentação Swagger;
-- [x] Interface em Flutter com Login, Cadastro, Estante e Formulário de Livros;
-- [x] Suporte aos temas claro e escuro.
+- [x] Endpoints iniciais com documentação Swagger;
+- [x] Interface Flutter com Login, Cadastro e Estante inicial;
+- [x] Suporte a Tema Claro e Escuro.
 
 ## 🚀 Entrega 2 (Concluída)
+- [x] Tabela `ProgressosLeitura` no MySQL com Cascade Delete;
+- [x] Registro de sessões de leitura (páginas lidas e anotações);
+- [x] Cálculo e atualização dinâmica do percentual de progresso;
+- [x] Sincronização entre FrontEnd e BackEnd.
 
-**Progresso de Leitura**
+## 🚀 Entrega 3 (Concluída)
+- [x] CRUD completo de livros (Criação, Leitura, Edição e Exclusão);
+- [x] Validação impedindo que o total de páginas seja inferior às páginas lidas;
+- [x] Modal de confirmação para exclusão segura;
+- [x] Reformulação visual dos cards na estante.
 
-- [x] Atualização das páginas lidas;
-- [x] Persistência do progresso no BackEnd (`ProgressosLeitura`);
-- [x] Sincronização do progresso entre FrontEnd e BackEnd;
-- [x] Atualização do percentual de leitura na interface.
-
-## 🚀 Entrega 3 (Próxima Etapa)
-
-**Gerenciamento de Livros**
-
-- Implementação do CRUD completo de livros;
-- Edição de informações dos livros;
-- Exclusão de livros;
-- Filtros na estante;
-- Filtro por status de leitura;
-- Filtro por autor;
-- Filtro por título.
-
-## 🚀 Entrega 4
-
-**Dashboard e Metas**
-
-- Dashboard de leitura;
-- Estatísticas do usuário;
-- Quantidade de livros lidos;
-- Livros em andamento;
-- Livros ainda não iniciados;
-- Acompanhamento de páginas lidas;
-- Criação de metas anuais de leitura;
-- Acompanhamento do progresso das metas.
-
----
-
-# 🎯 Objetivo do Projeto
-
-O **BookLog** tem como objetivo proporcionar uma forma simples e organizada de acompanhar o hábito de leitura, centralizando os livros do usuário em uma estante digital e permitindo acompanhar o progresso de cada leitura.
-
-O projeto também tem como finalidade aplicar, de forma prática, conhecimentos relacionados a:
-
-- Desenvolvimento BackEnd;
-- Desenvolvimento FrontEnd;
-- APIs REST;
-- Banco de dados relacionais;
-- Autenticação e autorização;
-- Desenvolvimento mobile;
-- Desenvolvimento Web;
-- Git e GitHub;
-- Metodologias ágeis;
-- Organização e documentação de projetos.
+## 🚀 Entrega Final (Concluída) 🏆
+- [x] **Persistência de Favoritos no MySQL:** Coluna `Favorito` na tabela `Livros` e endpoint `PATCH /api/Livros/{id}/favorito`;
+- [x] **Persistência de Status de Leitura no MySQL:** Coluna `Status` (`QueroLer`, `Lendo`, `Lido`) com transições automáticas e manuais;
+- [x] **Filtros Avançados na Estante:** Chips com contagens dinâmicas e filtros combinados na API;
+- [x] **Dashboard de Estatísticas Completo:** Livros concluídos, páginas no ano, média diária e maior streak de leitura;
+- [x] **Documentação Técnica UML Oficial:** Diagrama de Casos de Uso, Diagrama de Classes e Especificação de Regras de Negócio em PDF (`Documentacao_UML_BookLog.pdf`).
 
 ---
 
 # 👩‍💻 Autoria
 
-**Kelly Pitella**
-
-Projeto desenvolvido como parte da formação acadêmica/profissional na área de desenvolvimento de sistemas.
+**Kelly Pitella**  
+Faculdade Impacta de Tecnologia &bull; Engenharia de Software  
+Projeto: **BookLogImpacta** &bull; 2026
 
 ---
 
 # 📌 Status do Projeto
 
-🚧 **Em desenvolvimento**
+✅ **Concluído — Entrega Final Aprovada**
 
-A versão atual corresponde à **Entrega 2 (Concluída)**. O próximo ciclo de desenvolvimento iniciará os itens da **Entrega 3 (CRUD e Filtros de Livros)**.
+Todas as metas, requisitos funcionais, não-funcionais, regras de persistência relacional e artefatos de engenharia de software foram implementados, testados e documentados com sucesso.
