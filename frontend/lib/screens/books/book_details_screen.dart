@@ -8,16 +8,18 @@ import 'add_book_screen.dart';
 
 class BookDetailsScreen extends StatefulWidget {
   final BookModel book;
+  final LivroService? livroService;
 
-  const BookDetailsScreen({super.key, required this.book});
+  const BookDetailsScreen({super.key, required this.book, this.livroService});
 
   @override
   State<BookDetailsScreen> createState() => _BookDetailsScreenState();
 }
 
 class _BookDetailsScreenState extends State<BookDetailsScreen> {
-  final LivroService _livroService = LivroService();
+  late final LivroService _livroService;
   final ProgressService _progressService = ProgressService();
+  bool _savingFavorite = false;
   late BookModel _book;
   late int totalPages;
   late int currentPage;
@@ -37,11 +39,32 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    _livroService = widget.livroService ?? LivroService();
     _book = widget.book;
     totalPages = _book.totalPaginas;
     currentPage = _book.paginasLidas;
     _pageInputController = TextEditingController(text: currentPage.toString());
     _loadHistory();
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (_savingFavorite) return;
+    setState(() => _savingFavorite = true);
+    try {
+      final favorite = await _livroService.toggleFavorito(_book.id);
+      if (mounted) setState(() => _book = _book.copyWith(favorito: favorite));
+    } catch (error, stack) {
+      debugPrint('Erro ao atualizar favoritos: $error\n$stack');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error is LivroException
+              ? error.message
+              : 'Não foi possível atualizar favoritos.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _savingFavorite = false);
+    }
   }
 
   @override
@@ -236,6 +259,16 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+                tooltip: _book.favorito ? 'Desfavoritar' : 'Favoritar',
+                onPressed: !_savingFavorite ? _toggleFavorite : null,
+                icon: Icon(
+                  _book.favorito ? Icons.favorite : Icons.favorite_border,
+                  color: _book.favorito
+                      ? colorScheme.error
+                      : colorScheme.onSurfaceVariant,
+                ),
+          ),
           Builder(
             builder: (appBarContext) => IconButton(
               onPressed: () => showAppSettingsMenu(appBarContext),

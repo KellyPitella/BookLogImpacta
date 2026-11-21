@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 
 import '../../core/widgets/app_settings_sheet.dart';
+import '../../core/widgets/book_card.dart';
 import '../../models/book_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/livro_service.dart';
 import '../books/add_book_screen.dart';
 import '../books/book_details_screen.dart';
+import '../books/favorite_books_screen.dart';
+import '../books/read_books_screen.dart';
+import '../books/want_to_read_screen.dart';
 import 'statistics_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.livroService});
+
+  final LivroService? livroService;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -17,28 +23,72 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   static const String _logoAssetPath = 'assets/images/BookLog_Logo.png';
-  final _livroService = LivroService();
+  late final LivroService _livroService;
   final _authService = AuthService();
+  final Set<int> _savingFavorites = {};
 
   int _selectedCategoryIndex = 0;
   final int _currentNavIndex = 0;
   String _userName = 'BookLog';
   int? _deletingBookId;
 
-  final List<String> _categories = [
-    'Lendo (3)',
-    'Lidos (12)',
-    'Quero Ler (8)',
-    'Favoritos',
-  ];
-
   List<BookModel> _books = [];
 
   @override
   void initState() {
     super.initState();
+    _livroService = widget.livroService ?? LivroService();
     _carregarUsuario();
     _carregarLivros();
+  }
+
+  Future<void> _toggleFavorite(BookModel book) async {
+    if (_savingFavorites.contains(book.id)) return;
+    setState(() => _savingFavorites.add(book.id));
+    try {
+      final favorite = await _livroService.toggleFavorito(book.id);
+      if (!mounted) return;
+      setState(() {
+        final index = _books.indexWhere((item) => item.id == book.id);
+        if (index >= 0) _books[index] = _books[index].copyWith(favorito: favorite);
+      });
+    } catch (error, stack) {
+      debugPrint('Erro ao atualizar favoritos: $error\n$stack');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error is LivroException
+                ? error.message
+                : 'Não foi possível atualizar favoritos.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _savingFavorites.remove(book.id));
+    }
+  }
+
+  Future<void> _openCategory(int index) async {
+    if (index == 0) {
+      setState(() => _selectedCategoryIndex = index);
+      return;
+    }
+    final Widget screen = switch (index) {
+      1 => ReadBooksScreen(
+        livroService: _livroService,
+      ),
+      2 => WantToReadScreen(
+        livroService: _livroService,
+      ),
+      _ => FavoriteBooksScreen(
+        livroService: _livroService,
+      ),
+    };
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(builder: (_) => screen),
+    );
+    if (mounted) await _carregarLivros();
   }
 
   Future<void> _carregarUsuario() async {
@@ -56,8 +106,15 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _books = livros.map(BookModel.fromJson).toList();
       });
-    } on LivroException catch (error) {
-      debugPrint('Erro ao carregar livros: ${error.message}');
+    } catch (error, stack) {
+      debugPrint('Erro ao carregar livros: $error\n$stack');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error is LivroException
+              ? error.message
+              : 'Não foi possível carregar a estante.')),
+        );
+      }
     }
   }
 
@@ -141,7 +198,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   static const Color primaryColor = Color(0xFF16332D);
   static const Color secondaryContainer = Color(0xFFC9E8CB);
-  static const Color tertiaryFixedDim = Color(0xFFF5BB88);
 
   @override
   Widget build(BuildContext context) {
@@ -155,7 +211,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final outlineVariant = colorScheme.outlineVariant;
     final surfaceContainer = colorScheme.surfaceContainer;
     final surfaceContainerHigh = colorScheme.surfaceContainerHigh;
-
+    final categories = [
+      'Lendo (${_books.where((book) => book.status == 'Lendo').length})',
+      'Lidos (${_books.where((book) => book.status == 'Lido').length})',
+      'Quero Ler (${_books.where((book) => book.status == 'QueroLer').length})',
+      'Favoritos (${_books.where((book) => book.favorito).length})',
+    ];
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -234,17 +295,13 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(
               height: 40,
               child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: _categories.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 8),
-                itemBuilder: (context, index) {
+                    scrollDirection: Axis.horizontal,
+                    itemCount: categories.length,
+                    separatorBuilder: (context, index) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
                   final isSelected = _selectedCategoryIndex == index;
                   return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedCategoryIndex = index;
-                      });
-                    },
+                    onTap: () => _openCategory(index),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -258,7 +315,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       alignment: Alignment.center,
                       child: Text(
-                        _categories[index],
+                        categories[index],
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: isSelected
@@ -269,7 +326,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   );
-                },
+                    },
               ),
             ),
             const SizedBox(height: 24),
@@ -349,182 +406,24 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBookCard({required BookModel book}) {
-    return Builder(
-      builder: (context) {
-        final colorScheme = Theme.of(context).colorScheme;
-        return Stack(
-          children: [
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => BookDetailsScreen(book: book),
-                    ),
-                  ).then((_) => _carregarLivros());
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: Container(
-                          width: double.infinity,
-                          color: primaryColor,
-                          child: const Center(
-                            child: Icon(
-                              Icons.auto_stories,
-                              size: 36,
-                              color: Color(0xFFC9E8CB),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 2,
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    book.titulo,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: colorScheme.onSurface,
-                                      height: 1.2,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    book.autor ?? '',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Column(
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Progresso',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w500,
-                                          color: colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                      Text(
-                                        '${book.percentualInt}%',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600,
-                                          color: colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(999),
-                                    child: LinearProgressIndicator(
-                                      value: book.progressFactor,
-                                      minHeight: 5,
-                                      backgroundColor:
-                                          colorScheme.surfaceContainer,
-                                      valueColor:
-                                          const AlwaysStoppedAnimation<Color>(
-                                            tertiaryFixedDim,
-                                          ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+    return BookCard(
+        book: book,
+        onOpen: () {
+          Navigator.push<Object?>(
+            context,
+            MaterialPageRoute(
+              builder: (context) => BookDetailsScreen(
+                book: book,
+                livroService: _livroService,
               ),
             ),
-            Positioned(
-              top: 6,
-              right: 6,
-              child: Material(
-                color: colorScheme.surface.withValues(alpha: 0.9),
-                shape: const CircleBorder(),
-                child: PopupMenuButton<String>(
-                  tooltip: 'Opções do livro',
-                  enabled: _deletingBookId != book.id,
-                  icon: const Icon(Icons.more_vert),
-                  onSelected: (option) async {
-                    if (option == 'edit') {
-                      await _editarLivro(book);
-                    } else if (option == 'delete') {
-                      await _excluirLivro(book);
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit_outlined),
-                          SizedBox(width: 12),
-                          Text('Editar'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete_outline, color: colorScheme.error),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Excluir',
-                            style: TextStyle(color: colorScheme.error),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+          ).then((_) => _carregarLivros());
+        },
+        onEdit: () => _editarLivro(book),
+        onDelete: () => _excluirLivro(book),
+        isFavorite: book.favorito,
+        onToggleFavorite: () => _toggleFavorite(book),
+        busy: _deletingBookId == book.id || _savingFavorites.contains(book.id),
     );
   }
 

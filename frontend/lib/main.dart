@@ -6,6 +6,9 @@ import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/books/add_book_screen.dart';
+import 'screens/books/favorite_books_screen.dart';
+import 'screens/books/read_books_screen.dart';
+import 'screens/books/want_to_read_screen.dart';
 
 void main() {
   runApp(const BookLogApp());
@@ -34,6 +37,9 @@ class BookLogApp extends StatelessWidget {
             '/register': (context) => const RegisterScreen(),
             '/home': (context) => const HomeScreen(),
             '/add-book': (context) => const AddBookScreen(),
+            '/lidos': (context) => const ReadBooksScreen(),
+            '/quero-ler': (context) => const WantToReadScreen(),
+            '/favoritos': (context) => const FavoriteBooksScreen(),
           },
         );
       },

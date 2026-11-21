@@ -6,6 +6,8 @@ class BookModel {
   final int totalPaginas;
   final int paginasLidas;
   final bool concluido;
+  final bool favorito;
+  final String status;
   final DateTime dataCadastro;
   final double percentual;
   final String? capaArquivo;
@@ -18,6 +20,8 @@ class BookModel {
     required this.totalPaginas,
     required this.paginasLidas,
     required this.concluido,
+    this.favorito = false,
+    this.status = 'QueroLer',
     required this.dataCadastro,
     required this.percentual,
     this.capaArquivo,
@@ -32,6 +36,8 @@ class BookModel {
       totalPaginas: json['totalPaginas'] as int,
       paginasLidas: json['paginasLidas'] as int,
       concluido: json['concluido'] as bool,
+      favorito: json['favorito'] as bool? ?? false,
+      status: json['status'] as String? ?? 'QueroLer',
       dataCadastro: DateTime.parse(json['dataCadastro'] as String),
       percentual: (json['percentual'] as num).toDouble(),
       capaArquivo: json['capaArquivo'] as String?,
@@ -47,6 +53,8 @@ class BookModel {
       'totalPaginas': totalPaginas,
       'paginasLidas': paginasLidas,
       'concluido': concluido,
+      'favorito': favorito,
+      'status': status,
       'dataCadastro': dataCadastro.toIso8601String(),
       'percentual': percentual,
       'capaArquivo': capaArquivo,
@@ -66,6 +74,8 @@ class BookModel {
     int? totalPaginas,
     int? paginasLidas,
     bool? concluido,
+    bool? favorito,
+    String? status,
     DateTime? dataCadastro,
     double? percentual,
     String? capaArquivo,
@@ -78,6 +88,8 @@ class BookModel {
       totalPaginas: totalPaginas ?? this.totalPaginas,
       paginasLidas: paginasLidas ?? this.paginasLidas,
       concluido: concluido ?? this.concluido,
+      favorito: favorito ?? this.favorito,
+      status: status ?? this.status,
       dataCadastro: dataCadastro ?? this.dataCadastro,
       percentual: percentual ?? this.percentual,
       capaArquivo: capaArquivo ?? this.capaArquivo,
