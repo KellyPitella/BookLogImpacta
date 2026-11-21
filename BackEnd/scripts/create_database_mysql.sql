@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS Livros (
     TotalPaginas INT NOT NULL,
     PaginasLidas INT NOT NULL DEFAULT 0,
     Concluido TINYINT(1) NOT NULL DEFAULT 0,
+    Favorito TINYINT(1) NOT NULL DEFAULT 0,
+    Status VARCHAR(20) NOT NULL DEFAULT 'QueroLer',
     DataCadastro DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     UsuarioId INT NOT NULL,
 
@@ -58,6 +60,47 @@ SET @column_exists = (
 SET @sql = IF(
     @column_exists = 0,
     'ALTER TABLE Livros ADD COLUMN Concluido TINYINT(1) NOT NULL DEFAULT 0',
+    'SELECT 1'
+);
+PREPARE migrate_column FROM @sql;
+EXECUTE migrate_column;
+DEALLOCATE PREPARE migrate_column;
+
+SET @column_exists = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'Livros'
+      AND COLUMN_NAME = 'Favorito'
+);
+SET @sql = IF(
+    @column_exists = 0,
+    'ALTER TABLE Livros ADD COLUMN Favorito TINYINT(1) NOT NULL DEFAULT 0',
+    'SELECT 1'
+);
+PREPARE migrate_column FROM @sql;
+EXECUTE migrate_column;
+DEALLOCATE PREPARE migrate_column;
+
+SET @column_exists = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'Livros'
+      AND COLUMN_NAME = 'Status'
+);
+SET @sql = IF(
+    @column_exists = 0,
+    'ALTER TABLE Livros ADD COLUMN Status VARCHAR(20) NOT NULL DEFAULT ''QueroLer''',
+    'SELECT 1'
+);
+PREPARE migrate_column FROM @sql;
+EXECUTE migrate_column;
+DEALLOCATE PREPARE migrate_column;
+
+SET @sql = IF(
+    @column_exists = 0,
+    'UPDATE Livros SET Status = CASE WHEN Concluido = 1 THEN ''Lido'' WHEN PaginasLidas > 0 THEN ''Lendo'' ELSE ''QueroLer'' END',
     'SELECT 1'
 );
 PREPARE migrate_column FROM @sql;
