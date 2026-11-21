@@ -11,6 +11,8 @@ public class LivroDto
     public int TotalPaginas { get; set; }
     public int PaginasLidas { get; set; }
     public bool Concluido { get; set; }
+    public bool Favorito { get; set; }
+    public string Status { get; set; } = "QueroLer";
     public DateTime DataCadastro { get; set; }
     public double Percentual => TotalPaginas > 0 ? Math.Round((double)PaginasLidas / TotalPaginas * 100, 1) : 0;
 }
@@ -30,6 +32,9 @@ public class CreateLivroDto
     [Required]
     [Range(1, int.MaxValue)]
     public int TotalPaginas { get; set; }
+
+    public string? Status { get; set; }
+    public bool? Favorito { get; set; }
 }
 
 public class UpdateLivroDto
@@ -45,4 +50,14 @@ public class UpdateLivroDto
 
     [Range(1, int.MaxValue)]
     public int? TotalPaginas { get; set; }
+
+    public string? Status { get; set; }
+    public bool? Favorito { get; set; }
+}
+
+/// <summary>Representa o novo status de leitura de um livro.</summary>
+public sealed record UpdateLivroStatusDto
+{
+    [Required]
+    public required string Status { get; init; }
 }

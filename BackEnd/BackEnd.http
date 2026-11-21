@@ -1,6 +1,34 @@
 @BackEnd_HostAddress = http://localhost:5191
+@token = cole_o_token_aqui
+@livroId = 1
 
-GET {{BackEnd_HostAddress}}/weatherforecast/
+### Listar livros de um status e apenas favoritos
+GET {{BackEnd_HostAddress}}/api/Livros?status=Lendo&favoritos=true
+Authorization: Bearer {{token}}
 Accept: application/json
 
-###
+### Alternar favorito (retorna o livro atualizado)
+PATCH {{BackEnd_HostAddress}}/api/Livros/{{livroId}}/favorito
+Authorization: Bearer {{token}}
+
+### Alterar status (retorna o livro atualizado)
+PATCH {{BackEnd_HostAddress}}/api/Livros/{{livroId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "Lido"
+}
+
+### Status inválido (400)
+PATCH {{BackEnd_HostAddress}}/api/Livros/{{livroId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "Invalido"
+}
+
+### Livro inexistente ou de outro usuário (404)
+PATCH {{BackEnd_HostAddress}}/api/Livros/2147483647/favorito
+Authorization: Bearer {{token}}

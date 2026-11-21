@@ -23,6 +23,11 @@ public class Livro
 
     public bool Concluido { get; set; }
 
+    public bool Favorito { get; set; } = false;
+
+    [StringLength(20)]
+    public string Status { get; set; } = "QueroLer";
+
     public DateTime DataCadastro { get; set; } = DateTime.UtcNow;
 
     public int UsuarioId { get; set; }

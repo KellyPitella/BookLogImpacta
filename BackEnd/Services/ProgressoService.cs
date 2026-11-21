@@ -40,6 +40,7 @@ public class ProgressoService
 
         livro.PaginasLidas += dto.PaginasLidas;
         livro.Concluido = livro.PaginasLidas >= livro.TotalPaginas;
+        livro.Status = LivroStatus.FromProgress(livro);
         _context.ProgressosLeitura.Add(progresso);
         await _context.SaveChangesAsync();
 
