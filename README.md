@@ -83,6 +83,8 @@ O campo `Email` possui restrição de **unicidade** (`UNIQUE INDEX`), impedindo 
 | `TotalPaginas` | INT | Número total de páginas do livro |
 | `PaginasLidas` | INT | Quantidade total de páginas já lidas (Padrão: 0) |
 | `Concluido` | TINYINT(1) | Indica se a leitura da obra foi finalizada (Padrão: 0) |
+| `Favorito` | TINYINT(1) | Indica se o livro é favorito (padrão: 0) |
+| `Status` | VARCHAR(20) | `QueroLer`, `Lendo` ou `Lido` (padrão: `QueroLer`) |
 | `DataCadastro` | DATETIME(6) | Data e hora de cadastro do livro |
 | `UsuarioId` | INT (FK) | Referência ao usuário proprietário (`ON DELETE CASCADE`) |
 
@@ -177,12 +179,42 @@ O fluxo de autenticação funciona da seguinte forma:
 
 ### Schema de Requisição (Livros)
 
+Além da listagem e do cadastro, a API oferece:
+
+- `PUT /api/Livros/{id}` para atualizar um livro e `DELETE /api/Livros/{id}` para excluí-lo.
+- `PATCH /api/Livros/{id}/favorito` para alternar o favorito e retornar o livro atualizado.
+- `PATCH /api/Livros/{id}/status` para alterar o status e retornar o livro atualizado.
+
+O `GET /api/Livros` aceita os filtros opcionais `status` e `favoritos=true`;
+`favoritos=false` ou a ausência do filtro retorna favoritos e não favoritos.
+Os filtros podem ser combinados. Status inválidos resultam em `400`; livros
+inexistentes ou de outro usuário resultam em `404` nas operações individuais.
+
+O corpo de `PATCH /api/Livros/{id}/status` é, por exemplo, `{"status":"Lido"}`.
+Os valores aceitos são exatamente `QueroLer`, `Lendo` e `Lido`. Marcar como
+`Lido` define `concluido` como verdadeiro e `paginasLidas` como `totalPaginas`.
+Marcar como `QueroLer` ou `Lendo` desmarca `concluido`, mas preserva as páginas e
+o histórico existentes. Ao registrar progresso, o status volta a ser calculado
+automaticamente. Uma conclusão manual não cria um registro de progresso nem
+uma data de conclusão.
+
 **`CreateLivroDto`**
 
 - `titulo` (string, obrigatório, máx: 300 caracteres)
 - `totalPaginas` (integer, obrigatório, mín: 1)
 - `autor` (string, opcional, máx: 200 caracteres)
 - `genero` (string, opcional, máx: 100 caracteres)
+- `status` (string, opcional; padrão: `QueroLer`)
+- `favorito` (boolean, opcional; padrão: `false`)
+
+`UpdateLivroDto` também aceita `status` e `favorito` opcionais. Após atualizar
+o código, execute o script [create_database_mysql.sql](BackEnd/scripts/create_database_mysql.sql)
+no banco configurado antes de iniciar a nova versão da API. Ele acrescenta as
+colunas ausentes e inicializa o status de livros existentes a partir da conclusão
+e das páginas lidas, sem sobrescrever status já cadastrados.
+
+O frontend usa os favoritos e status do backend. Os favoritos que foram salvos
+anteriormente apenas no dispositivo não são migrados automaticamente.
 
 ---
 

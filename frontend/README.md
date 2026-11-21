@@ -2,6 +2,17 @@
 
 A new Flutter project.
 
+## Favoritos
+
+Os favoritos e o status de leitura são carregados e gravados no backend para o
+usuário autenticado. Os favoritos anteriormente armazenados no dispositivo não
+são migrados nem utilizados pela interface.
+Na estante, use o coração de um card para favoritar ou desfavoritar e as
+categorias **Lidos**, **Quero Ler** e **Favoritos** para abrir as listas.
+Os contadores consideram o status retornado pela API. A tela de detalhes também permite
+favoritar e desfavoritar. As listas estão disponíveis pelas rotas `/lidos`,
+`/quero-ler` e `/favoritos`.
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
